@@ -32,3 +32,14 @@ switchMap=function(mode){if(mode!=='bantigny'){priorSwitchMap(mode);return}mapMo
 chooseSector=function(id){priorChooseSector(id);if(id==='bantigny'&&sectorEl.value===id){switchMap('bantigny');render()}};
 drawZones=function(){if(mapMode!=='bantigny'){priorDrawZones();return}$('#zones').innerHTML='';legend.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.sector===sectorEl.value);b.setAttribute('aria-pressed',String(b.dataset.sector===sectorEl.value))})};
 const bantignyOption=document.createElement('option');bantignyOption.value='bantigny';bantignyOption.textContent='Détail place Bantigny';$('#baseMap').append(bantignyOption);
+const CLEAN_VIEWS={
+ haussy:{file:'haussy-sans-voitures.png',name:'Avenue de Haussy',matrix:affine([[150/1032,120/830],[930/1032,670/830],[650/1032,320/830]],[[407,381],[529,475],[489,400]].map(p=>project(PLAN_TRANSFORM,p)))},
+ souvenir:{file:'souvenir-sans-voitures.png',name:'Square du Souvenir',matrix:affine([[110/518,605/697],[390/518,20/697],[300/518,565/697]],[[407,381],[472,290],[445,390]].map(p=>project(PLAN_TRANSFORM,p)))}
+};
+const baseGlobalToMap=globalToMap,baseMapToGlobal=mapToGlobal,baseSwitchMap=switchMap,baseChooseSector=chooseSector,baseDrawZones=drawZones;
+globalToMap=function(p){const v=CLEAN_VIEWS[mapMode];if(!v)return baseGlobalToMap(p);const q=unproject(v.matrix,p);return [q[0]*map.naturalWidth,q[1]*map.naturalHeight]};
+mapToGlobal=function(p){const v=CLEAN_VIEWS[mapMode];return v?project(v.matrix,[p[0]/map.naturalWidth,p[1]/map.naturalHeight]):baseMapToGlobal(p)};
+switchMap=function(mode){const v=CLEAN_VIEWS[mode];if(!v){baseSwitchMap(mode);return}mapMode=mode;map.src=v.file;map.alt=v.name+' sans voitures, avec délimitation du secteur'};
+chooseSector=function(id){baseChooseSector(id);if(CLEAN_VIEWS[id]&&sectorEl.value===id){switchMap(id);render()}};
+drawZones=function(){if(!CLEAN_VIEWS[mapMode]){baseDrawZones();return}$('#zones').innerHTML='';legend.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.sector===sectorEl.value);b.setAttribute('aria-pressed',String(b.dataset.sector===sectorEl.value))})};
+for(const [id,v] of Object.entries(CLEAN_VIEWS)){const o=document.createElement('option');o.value=id;o.textContent='Détail '+v.name;$('#baseMap').append(o)}
