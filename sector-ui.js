@@ -15,3 +15,11 @@ markerDown=function(e,i){e.stopPropagation();selectRow(i);if(!window.ADMIN_MODE|
 SECTORS.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;sectorEl.append(o)});sectorEl.onchange=()=>chooseSector(sectorEl.value);$('#baseMap').onchange=e=>{if(!commit()){e.target.value=mapMode;return}switchMap(e.target.value);if(window.ADMIN_MODE&&selected!==null)map.addEventListener('load',()=>fillCoordinates(rows[selected]),{once:true})};const oldMapLoad=map.onload;map.onload=()=>{$('#baseMap').value=mapMode;oldMapLoad();if(window.ADMIN_MODE&&selected!==null)fillCoordinates(rows[selected]);};
 $('#fit').onclick=()=>{if(commit())chooseSector('')};view.onwheel=e=>{if(e.target.closest('.panel'))return;e.preventDefault();const r=view.getBoundingClientRect();zoom(e.deltaY<0?1.12:.89,e.clientX-r.left,e.clientY-r.top)};
 switchMap('ensemble');
+// Une légende explicite remplace les grandes bandes multicolores anonymes.
+const legend=document.createElement('nav');legend.className='sector-legend';legend.setAttribute('aria-label','Choisir un secteur');
+const legendTitle=document.createElement('strong');legendTitle.textContent='Les secteurs';legend.append(legendTitle);
+for(const s of SECTORS){const b=document.createElement('button');b.type='button';b.dataset.sector=s.id;b.style.setProperty('--sector-color',s.color);b.textContent=s.name;b.onclick=()=>chooseSector(s.id);legend.append(b)}
+legend.onpointerdown=e=>e.stopPropagation();view.append(legend);
+const detailedDrawZones=drawZones;
+drawZones=function(){detailedDrawZones();const focused=!!sectorEl.value;$('#zones').querySelectorAll('polygon').forEach((p,i)=>{const active=sectorEl.value===SECTORS[i].id;p.setAttribute('fill-opacity',focused?(active?'.16':'.015'):'.055');p.setAttribute('stroke-opacity',focused?(active?'.95':'.12'):'.72');p.setAttribute('stroke-width',active?'2.2':'1.35')});legend.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.sector===sectorEl.value);b.setAttribute('aria-pressed',String(b.dataset.sector===sectorEl.value))})};
+if(map.complete&&map.naturalWidth)drawZones();
