@@ -23,3 +23,12 @@ legend.onpointerdown=e=>e.stopPropagation();view.append(legend);
 const detailedDrawZones=drawZones;
 drawZones=function(){detailedDrawZones();const focused=!!sectorEl.value;$('#zones').querySelectorAll('polygon').forEach((p,i)=>{const active=sectorEl.value===SECTORS[i].id;p.setAttribute('fill-opacity',focused?(active?'.16':'.015'):'.055');p.setAttribute('stroke-opacity',focused?(active?'.95':'.12'):'.72');p.setAttribute('stroke-width',active?'2.2':'1.35')});legend.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.sector===sectorEl.value);b.setAttribute('aria-pressed',String(b.dataset.sector===sectorEl.value))})};
 if(map.complete&&map.naturalWidth)drawZones();
+// Vue Bantigny validée : photographie nettoyée et contour intégré au fond.
+const BANTIGNY_TRANSFORM=affine([[279,72],[1185,830],[120,250]],[[530,492],[595,564],[514,518]].map(p=>project(PLAN_TRANSFORM,p)));
+const priorGlobalToMap=globalToMap,priorMapToGlobal=mapToGlobal,priorSwitchMap=switchMap,priorChooseSector=chooseSector,priorDrawZones=drawZones;
+globalToMap=p=>mapMode==='bantigny'?unproject(BANTIGNY_TRANSFORM,p):priorGlobalToMap(p);
+mapToGlobal=p=>mapMode==='bantigny'?project(BANTIGNY_TRANSFORM,p):priorMapToGlobal(p);
+switchMap=function(mode){if(mode!=='bantigny'){priorSwitchMap(mode);return}mapMode=mode;map.src='place-bantigny-sans-voitures.png';map.alt='Place Édouard Bantigny sans voitures, avec délimitation du secteur'};
+chooseSector=function(id){priorChooseSector(id);if(id==='bantigny'&&sectorEl.value===id){switchMap('bantigny');render()}};
+drawZones=function(){if(mapMode!=='bantigny'){priorDrawZones();return}$('#zones').innerHTML='';legend.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.sector===sectorEl.value);b.setAttribute('aria-pressed',String(b.dataset.sector===sectorEl.value))})};
+const bantignyOption=document.createElement('option');bantignyOption.value='bantigny';bantignyOption.textContent='Détail place Bantigny';$('#baseMap').append(bantignyOption);
