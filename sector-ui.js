@@ -119,28 +119,55 @@ function drawZones(){
   for(const s of SECTORS){
     const active=!sectorEl.value||sectorEl.value===s.id;
     const g=document.createElementNS(ns,'g');
-    const points=(s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p));
-    const width=s.routeWidth||s.width;
-    const d=points.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
-    const halo=document.createElementNS(ns,'path');
-    const band=document.createElementNS(ns,'path');
-    for(const p of [halo,band]){
-      p.setAttribute('d',d);
-      p.setAttribute('fill','none');
-      p.setAttribute('stroke-linecap','round');
-      p.setAttribute('stroke-linejoin','round');
+    const outline = CLEAR_OUTLINES[s.id] || (s.polygon ? s.polygon.map(p=>globalToMap(p)) : null);
+    if(outline && outline.length){
+      const d = outline.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+' Z';
+      const halo=document.createElementNS(ns,'path');
+      halo.setAttribute('d',d);
+      halo.setAttribute('fill','none');
+      halo.setAttribute('stroke','#fff');
+      halo.setAttribute('stroke-width',sectorEl.value&&active?'5':'0');
+      halo.setAttribute('stroke-opacity',sectorEl.value&&active?'.85':'0');
+      halo.setAttribute('stroke-linejoin','round');
+      halo.classList.add('sector-halo');
+
+      const poly=document.createElementNS(ns,'path');
+      poly.setAttribute('d',d);
+      poly.dataset.sector=s.id;
+      poly.setAttribute('fill',s.color);
+      poly.setAttribute('fill-opacity',sectorEl.value&&active?'.28':'0');
+      poly.setAttribute('stroke',s.color);
+      poly.setAttribute('stroke-width',sectorEl.value&&active?'2.5':'0');
+      poly.setAttribute('stroke-opacity',sectorEl.value&&active?'.95':'0');
+      poly.setAttribute('stroke-linejoin','round');
+      poly.classList.add('sector-poly');
+
+      g.style.pointerEvents=sectorEl.value&&active?'all':'stroke';
+      g.append(halo,poly);
+    }else{
+      const points=(s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p));
+      const width=s.routeWidth||s.width;
+      const d=points.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+      const halo=document.createElementNS(ns,'path');
+      const band=document.createElementNS(ns,'path');
+      for(const p of [halo,band]){
+        p.setAttribute('d',d);
+        p.setAttribute('fill','none');
+        p.setAttribute('stroke-linecap','round');
+        p.setAttribute('stroke-linejoin','round');
+      }
+      halo.classList.add('sector-halo');
+      halo.setAttribute('stroke','#fff');
+      halo.setAttribute('stroke-width',sectorEl.value&&active?'8':'0');
+      halo.setAttribute('stroke-opacity',sectorEl.value&&active?'.85':'0');
+      band.classList.add('sector-band');
+      band.dataset.sector=s.id;
+      band.setAttribute('stroke',s.color);
+      band.setAttribute('stroke-width',sectorEl.value&&active?'4':'0');
+      band.setAttribute('stroke-opacity',sectorEl.value&&active?'.88':'0');
+      g.style.pointerEvents='stroke';
+      g.append(halo,band);
     }
-    halo.classList.add('sector-halo');
-    halo.setAttribute('stroke','#fff');
-    halo.setAttribute('stroke-width',sectorEl.value&&active?'12':'0');
-    halo.setAttribute('stroke-opacity',sectorEl.value&&active?'.9':'0');
-    band.classList.add('sector-band');
-    band.dataset.sector=s.id;
-    band.setAttribute('stroke',s.color);
-    band.setAttribute('stroke-width',sectorEl.value&&active?'7':'0');
-    band.setAttribute('stroke-opacity',sectorEl.value&&active?'.88':'0');
-    g.style.pointerEvents='stroke';
-    g.append(halo,band);
     const title=document.createElementNS(ns,'title');
     title.textContent=s.name;
     g.append(title);
