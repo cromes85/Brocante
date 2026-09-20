@@ -183,7 +183,14 @@ function drawZones(){
 
 render=function(){
   markers.innerHTML='';
+  if(!window.ADMIN_MODE&&typeof isConstructionMode==='function'&&isConstructionMode()){
+    markers.classList.add('hidden');
+    drawZones();
+    return;
+  }
+  markers.classList.remove('hidden');
   rows.forEach((r,i)=>{
+    if(r.emplacement==='__SITE_MODE__')return;
     const sec=sectorFor(r.rue),p=pointOnMap(r),m=document.createElement('button');
     m.type='button';
     m.className='marker'+(window.ADMIN_MODE?' admin-marker':'')+(i===selected?' selected':'');
