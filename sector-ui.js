@@ -43,3 +43,26 @@ switchMap=function(mode){const v=CLEAN_VIEWS[mode];if(!v){baseSwitchMap(mode);re
 chooseSector=function(id){baseChooseSector(id);if(CLEAN_VIEWS[id]&&sectorEl.value===id){switchMap(id);render()}};
 drawZones=function(){if(!CLEAN_VIEWS[mapMode]){baseDrawZones();return}$('#zones').innerHTML='';legend.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.sector===sectorEl.value);b.setAttribute('aria-pressed',String(b.dataset.sector===sectorEl.value))})};
 for(const [id,v] of Object.entries(CLEAN_VIEWS)){const o=document.createElement('option');o.value=id;o.textContent='Détail '+v.name;$('#baseMap').append(o)}
+
+// Marais Sainte-Catherine : cadrer son contour sur le fond Gare, et non
+// la totalité des trois zones déjà dessinées dans cette photographie.
+const fitWholeMap=fit;
+fit=function(){
+  if(sectorEl.value!=='marais'||mapMode!=='gare'||!map.naturalWidth){fitWholeMap();return}
+  const points=GARE_OUTLINES.marais;
+  const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const legendVisible=getComputedStyle(legend).display!=='none';
+  const left=legendVisible?legend.offsetLeft+legend.offsetWidth+24:24;
+  const panel=$('.panel');
+  const right=window.ADMIN_MODE&&view.clientWidth>700&&panel?panel.offsetWidth+36:24;
+  const top=32;
+  const bottom=window.ADMIN_MODE&&view.clientWidth<=700&&panel?panel.offsetHeight+80:96;
+  const w=Math.max(100,view.clientWidth-left-right),h=Math.max(100,view.clientHeight-top-bottom);
+  sc=Math.min(max,w/(x1-x0+64),h/(y1-y0+64));
+  min=Math.min(view.clientWidth/map.naturalWidth,view.clientHeight/map.naturalHeight)*.65;
+  tx=left+w/2-(x0+x1)/2*sc;
+  ty=top+h/2-(y0+y1)/2*sc;
+  transform();
+};
+window.onresize=fit;
