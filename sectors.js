@@ -18,6 +18,23 @@ const SECTORS=[
  {id:'bantigny',name:'Place Édouard Bantigny',color:'#fbbf24',path:[[773,550],[817,575],[852,609]],width:30,center:[817,580]},
  {id:'grandrue',name:'Grand-Rue',color:'#a3e635',path:[[942,316],[897,395],[822,486],[779,531],[731,590],[659,670],[590,754],[533,833]],width:16,center:[760,552],note:'Du carrefour avenue Albert Ier jusqu’en haut de la rampe de la Gare.'}
 ];
+// Axes propres relevés directement sur plan-clair.png. Ils servent uniquement
+// à l'affichage général; les polygones historiques restent disponibles pour
+// la compatibilité des coordonnées et des vues détaillées.
+const CLEAN_ROUTES={
+ gare:[[421,91],[461,111],[500,137],[522,166],[554,190],[608,208],[663,229],[687,244]],
+ brichant:[[548,183],[529,226],[507,272],[484,320],[454,365],[416,391]],
+ marais:[[286,349],[323,352],[357,366],[386,380],[416,391]],
+ catherine:[[477,287],[494,321],[516,353],[542,385],[568,410],[596,435],[623,466]],
+ delfosse:[[355,148],[325,185],[303,228],[288,278],[270,330],[252,382],[239,430],[244,466],[263,503],[292,542],[327,586],[365,621],[397,626]],
+ deschamps:[[416,391],[393,418],[369,444],[348,472],[351,500],[369,527],[391,554],[415,579],[439,602]],
+ souvenir:[[416,391],[400,372],[389,348],[381,322],[382,296],[394,275]],
+ haussy:[[416,391],[446,402],[478,421],[510,443],[542,466],[570,486]],
+ bantigny:[[571,486],[594,497],[616,513],[635,533]],
+ grandrue:[[688,244],[672,282],[653,326],[630,369],[604,414],[575,458],[544,501],[511,544],[479,583],[446,622],[414,661],[385,701],[357,744],[335,782],[316,814]]
+};
+const CLEAN_ROUTE_WIDTHS={gare:22,brichant:13,marais:11,catherine:12,delfosse:13,deschamps:12,souvenir:12,haussy:18,bantigny:20,grandrue:18};
+for(const s of SECTORS){s.route=CLEAN_ROUTES[s.id];s.routeWidth=CLEAN_ROUTE_WIDTHS[s.id]}
 // Contours de l’espace de rue : bords distincts, renfoncements et carrefours.
 // Les trois contours historiques sont reportés du fond détaillé sans changer
 // la projection des marqueurs. Les autres sont tracés sur les vues fournies.
