@@ -1,68 +1,332 @@
 let mapMode='ensemble';
 const sectorEl=$('#sector');
-function globalToMap(p){return unproject(mapMode==='gare'?GARE_TRANSFORM:mapMode==='sud'?SOUTH_TRANSFORM:PLAN_TRANSFORM,p)}
-function mapToGlobal(p){return project(mapMode==='gare'?GARE_TRANSFORM:mapMode==='sud'?SOUTH_TRANSFORM:PLAN_TRANSFORM,p)}
+
+// Transformations affines pour chaque vue
+const BANTIGNY_TRANSFORM=affine([[279,72],[1185,830],[120,250]],[[530,492],[595,564],[514,518]].map(p=>project(PLAN_TRANSFORM,p)));
+const CLEAN_VIEWS={
+  haussy:{file:'haussy-sans-voitures.png',name:'Avenue de Haussy',matrix:affine([[150/1032,120/830],[930/1032,670/830],[650/1032,320/830]],[[407,381],[529,475],[489,400]].map(p=>project(PLAN_TRANSFORM,p)))},
+  souvenir:{file:'souvenir-sans-voitures.png',name:'Square du Souvenir',matrix:affine([[110/518,605/697],[390/518,20/697],[300/518,565/697]],[[407,381],[472,290],[445,390]].map(p=>project(PLAN_TRANSFORM,p)))}
+};
+
+function globalToMap(p){
+  const cv=CLEAN_VIEWS[mapMode];
+  if(cv){const q=unproject(cv.matrix,p);return [q[0]*map.naturalWidth,q[1]*map.naturalHeight]}
+  if(mapMode==='bantigny')return unproject(BANTIGNY_TRANSFORM,p);
+  if(mapMode==='gare')return unproject(GARE_TRANSFORM,p);
+  if(mapMode==='sud')return unproject(SOUTH_TRANSFORM,p);
+  return unproject(PLAN_TRANSFORM,p);
+}
+
+function mapToGlobal(p){
+  const cv=CLEAN_VIEWS[mapMode];
+  if(cv)return project(cv.matrix,[p[0]/map.naturalWidth,p[1]/map.naturalHeight]);
+  if(mapMode==='bantigny')return project(BANTIGNY_TRANSFORM,p);
+  if(mapMode==='gare')return project(GARE_TRANSFORM,p);
+  if(mapMode==='sud')return project(SOUTH_TRANSFORM,p);
+  return project(PLAN_TRANSFORM,p);
+}
+
 function pointOnMap(r){return globalToMap(globalPoint(r))}
 function displayedCoordinates(r){const p=pointOnMap(r);return [p[0]/map.naturalWidth*100,p[1]/map.naturalHeight*100]}
 function fromDisplayed(rue,x,y){return storedPoint(rue,mapToGlobal([x/100*map.naturalWidth,y/100*map.naturalHeight]))}
-function drawZones(){const svg=$('#zones'),ns='http://www.w3.org/2000/svg';svg.innerHTML='';svg.setAttribute('width',map.naturalWidth);svg.setAttribute('height',map.naturalHeight);svg.setAttribute('viewBox',`0 0 ${map.naturalWidth} ${map.naturalHeight}`);svg.style.overflow='hidden';if(!map.naturalWidth)return;for(const s of SECTORS){if(mapMode==='gare')continue;const active=!sectorEl.value||sectorEl.value===s.id,g=document.createElementNS(ns,'g'),points=(s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p)),width=s.routeWidth||s.width,d=points.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' '),halo=document.createElementNS(ns,'path'),band=document.createElementNS(ns,'path');for(const p of [halo,band]){p.setAttribute('d',d);p.setAttribute('fill','none');p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round')}halo.classList.add('sector-halo');halo.setAttribute('stroke','#fff');halo.setAttribute('stroke-width',String(width+5));halo.setAttribute('stroke-opacity',active?'.88':'.45');band.classList.add('sector-band');band.dataset.sector=s.id;band.setAttribute('stroke',s.color);band.setAttribute('stroke-width',String(width));band.setAttribute('stroke-opacity',active?'.62':'.13');g.style.pointerEvents='stroke';g.append(halo,band);const title=document.createElementNS(ns,'title');title.textContent=s.name;g.append(title);g.setAttribute('role','button');g.setAttribute('tabindex','0');g.setAttribute('aria-label',s.name);g.onclick=e=>{e.stopPropagation();chooseSector(s.id)};g.onpointerdown=e=>e.stopPropagation();g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseSector(s.id)}};svg.append(g)}}
-function commit(){return !window.ADMIN_MODE||(!window.isSaving&&(selected===null||!window.isUnlocked||!window.commitSelected||commitSelected()))}
-function switchMap(mode){mapMode=mode;map.src=mode==='gare'?'zone-gare-reference.png':mode==='sud'?'plan-sud.png':'plan-clair.png';map.alt=mode==='gare'?'Vue détaillée de la Gare':mode==='sud'?'Grand-Rue et place Bantigny, partie sud':'Plan clair des dix secteurs de la brocante';}
-function chooseSector(id){if(!commit()){sectorEl.value=sectorEl.dataset.previous||'';return}sectorEl.value=id;sectorEl.dataset.previous=id;selected=null;if(window.resetSelection)resetSelection();if($('#info'))$('#info').style.display='none';const sec=SECTORS.find(s=>s.id===id);switchMap(sec?.legacy?'gare':id==='bantigny'?'sud':'ensemble');$('#sectorNote').textContent=sec?sec.name+(sec.note?' · '+sec.note:''):'10 secteurs · Choisissez un secteur pour voir ses emplacements';render()}
-render=function(){markers.innerHTML='';rows.forEach((r,i)=>{const sec=sectorFor(r.rue),p=pointOnMap(r),m=document.createElement('button');m.type='button';m.className='marker'+(window.ADMIN_MODE?' admin-marker':'')+(i===selected?' selected':'');m.dataset.index=i;m.hidden=!!sectorEl.value&&sec?.id!==sectorEl.value||p[0]<0||p[1]<0||p[0]>map.naturalWidth||p[1]>map.naturalHeight;m.style.left=p[0]+'px';m.style.top=p[1]+'px';m.style.backgroundColor=i===selected?'#ef4444':sec?.color||'#7c3aed';m.textContent=r.emplacement;m.setAttribute('aria-label',`${r.emplacement} — ${sec?.name||r.rue}`);const tip=document.createElement('span');tip.className='tip';tip.textContent=r.emplacement+' — '+(sec?.name||r.rue);m.append(tip);m.onpointerdown=e=>markerDown(e,i);m.onclick=e=>{e.stopPropagation();selectRow(i)};markers.append(m)});drawZones()};
-selectRow=function(i,center=false){if(!commit())return;const r=rows[i],sec=sectorFor(r.rue);if(sectorEl.value&&sectorEl.value!==sec?.id){sectorEl.value=sec?.id||'';sectorEl.dataset.previous=sectorEl.value}const p=pointOnMap(r);if(p[0]<0||p[1]<0||p[0]>map.naturalWidth||p[1]>map.naturalHeight){switchMap(sec?.legacy?'gare':'sud');map.addEventListener('load',()=>selectRow(i,center),{once:true});return}selected=i;render();if(center){sc=Math.max(sc,Math.min(max,3.2));const w=Math.max(220,view.clientWidth-(window.ADMIN_MODE&&view.clientWidth>700?360:0));tx=w/2-p[0]*sc;ty=view.clientHeight/2-p[1]*sc;transform()}if(window.ADMIN_MODE){fillForm(r);return}$('#info').style.display='block';$('#iid').textContent=r.emplacement;$('#irue').textContent=sec?.name||r.rue;$('#inom').textContent=r.nom?'Exposant : '+r.nom:'';$('#idim').textContent=r.dimension?'Dimension : '+r.dimension:'';$('#istat').textContent=r.statut?'Statut : '+r.statut:'';};
-markerDown=function(e,i){e.stopPropagation();selectRow(i);if(!window.ADMIN_MODE||!window.isUnlocked||window.isSaving||selected!==i)return;e.preventDefault();const move=ev=>{const rect=view.getBoundingClientRect(),q=storedPoint(rows[i].rue,mapToGlobal([(ev.clientX-rect.left-tx)/sc,(ev.clientY-rect.top-ty)/sc]));if(q.some(n=>!Number.isFinite(n)||n<0||n>100))return;rows[i].x_pct=q[0];rows[i].y_pct=q[1];const p=pointOnMap(rows[i]),m=markers.children[i];m.style.left=p[0]+'px';m.style.top=p[1]+'px';fillCoordinates(rows[i]);markDirty()};const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up)};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up)};
-SECTORS.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;sectorEl.append(o)});sectorEl.onchange=()=>chooseSector(sectorEl.value);$('#baseMap').onchange=e=>{if(!commit()){e.target.value=mapMode;return}switchMap(e.target.value);if(window.ADMIN_MODE&&selected!==null)map.addEventListener('load',()=>fillCoordinates(rows[selected]),{once:true})};const oldMapLoad=map.onload;map.onload=()=>{$('#baseMap').value=mapMode;oldMapLoad();if(window.ADMIN_MODE&&selected!==null)fillCoordinates(rows[selected]);};
-$('#fit').onclick=()=>{if(commit())chooseSector('')};view.onwheel=e=>{if(e.target.closest('.panel'))return;e.preventDefault();const r=view.getBoundingClientRect();zoom(e.deltaY<0?1.12:.89,e.clientX-r.left,e.clientY-r.top)};
-switchMap('ensemble');
-// Une légende explicite remplace les grandes bandes multicolores anonymes.
-const legend=document.createElement('nav');legend.className='sector-legend';legend.setAttribute('aria-label','Choisir un secteur');
-const legendTitle=document.createElement('strong');legendTitle.textContent='Les secteurs';legend.append(legendTitle);
-for(const s of SECTORS){const b=document.createElement('button');b.type='button';b.dataset.sector=s.id;b.style.setProperty('--sector-color',s.color);b.textContent=s.name;b.onclick=()=>chooseSector(s.id);legend.append(b)}
-legend.onpointerdown=e=>e.stopPropagation();view.append(legend);
-const detailedDrawZones=drawZones;
-drawZones=function(){detailedDrawZones();const focused=!!sectorEl.value;$('#zones').querySelectorAll('.sector-band').forEach(p=>{const s=SECTORS.find(x=>x.id===p.dataset.sector),active=sectorEl.value===p.dataset.sector;p.setAttribute('stroke',s.color);p.setAttribute('stroke-opacity',focused&&active?'.88':'0');p.setAttribute('stroke-width',focused&&active?'7':'0')});$('#zones').querySelectorAll('.sector-halo').forEach((p,i)=>{const active=sectorEl.value===SECTORS[i].id;p.setAttribute('stroke-opacity',focused&&active?'.9':'0');p.setAttribute('stroke-width',focused&&active?'12':'0')});legend.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.sector===sectorEl.value);b.setAttribute('aria-pressed',String(b.dataset.sector===sectorEl.value))})};
-if(map.complete&&map.naturalWidth)drawZones();
-// Vue Bantigny validée : photographie nettoyée et contour intégré au fond.
-const BANTIGNY_TRANSFORM=affine([[279,72],[1185,830],[120,250]],[[530,492],[595,564],[514,518]].map(p=>project(PLAN_TRANSFORM,p)));
-const priorGlobalToMap=globalToMap,priorMapToGlobal=mapToGlobal,priorSwitchMap=switchMap,priorChooseSector=chooseSector,priorDrawZones=drawZones;
-globalToMap=p=>mapMode==='bantigny'?unproject(BANTIGNY_TRANSFORM,p):priorGlobalToMap(p);
-mapToGlobal=p=>mapMode==='bantigny'?project(BANTIGNY_TRANSFORM,p):priorMapToGlobal(p);
-switchMap=function(mode){if(mode!=='bantigny'){priorSwitchMap(mode);return}mapMode=mode;map.src='place-bantigny-sans-voitures.png';map.alt='Place Édouard Bantigny sans voitures, avec délimitation du secteur'};
-chooseSector=function(id){priorChooseSector(id);if(id==='bantigny'&&sectorEl.value===id){switchMap('bantigny');render()}};
-drawZones=function(){if(mapMode!=='bantigny'){priorDrawZones();return}$('#zones').innerHTML='';legend.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.sector===sectorEl.value);b.setAttribute('aria-pressed',String(b.dataset.sector===sectorEl.value))})};
-const bantignyOption=document.createElement('option');bantignyOption.value='bantigny';bantignyOption.textContent='Détail place Bantigny';$('#baseMap').append(bantignyOption);
-const CLEAN_VIEWS={
- haussy:{file:'haussy-sans-voitures.png',name:'Avenue de Haussy',matrix:affine([[150/1032,120/830],[930/1032,670/830],[650/1032,320/830]],[[407,381],[529,475],[489,400]].map(p=>project(PLAN_TRANSFORM,p)))},
- souvenir:{file:'souvenir-sans-voitures.png',name:'Square du Souvenir',matrix:affine([[110/518,605/697],[390/518,20/697],[300/518,565/697]],[[407,381],[472,290],[445,390]].map(p=>project(PLAN_TRANSFORM,p)))}
-};
-const baseGlobalToMap=globalToMap,baseMapToGlobal=mapToGlobal,baseSwitchMap=switchMap,baseChooseSector=chooseSector,baseDrawZones=drawZones;
-globalToMap=function(p){const v=CLEAN_VIEWS[mapMode];if(!v)return baseGlobalToMap(p);const q=unproject(v.matrix,p);return [q[0]*map.naturalWidth,q[1]*map.naturalHeight]};
-mapToGlobal=function(p){const v=CLEAN_VIEWS[mapMode];return v?project(v.matrix,[p[0]/map.naturalWidth,p[1]/map.naturalHeight]):baseMapToGlobal(p)};
-switchMap=function(mode){const v=CLEAN_VIEWS[mode];if(!v){baseSwitchMap(mode);return}mapMode=mode;map.src=v.file;map.alt=v.name+' sans voitures, avec délimitation du secteur'};
-chooseSector=function(id){baseChooseSector(id);if(CLEAN_VIEWS[id]&&sectorEl.value===id){switchMap(id);render()}};
-drawZones=function(){if(!CLEAN_VIEWS[mapMode]){baseDrawZones();return}$('#zones').innerHTML='';legend.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.sector===sectorEl.value);b.setAttribute('aria-pressed',String(b.dataset.sector===sectorEl.value))})};
-for(const [id,v] of Object.entries(CLEAN_VIEWS)){const o=document.createElement('option');o.value=id;o.textContent='Détail '+v.name;$('#baseMap').append(o)}
 
-// Marais Sainte-Catherine : cadrer son contour sur le fond Gare, et non
-// la totalité des trois zones déjà dessinées dans cette photographie.
-const fitWholeMap=fit;
-fit=function(){
-  if(sectorEl.value!=='marais'||mapMode!=='gare'||!map.naturalWidth){fitWholeMap();return}
-  const points=GARE_OUTLINES.marais;
-  const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
-  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
-  const legendVisible=getComputedStyle(legend).display!=='none';
+function commit(){return !window.ADMIN_MODE||(!window.isSaving&&(selected===null||!window.isUnlocked||!window.commitSelected||commitSelected()))}
+
+function switchMap(mode){
+  const cv=CLEAN_VIEWS[mode];
+  let file='plan-clair.png',alt='Plan clair des dix secteurs de la brocante';
+  if(cv){file=cv.file;alt=cv.name+' sans voitures, avec délimitation du secteur'}
+  else if(mode==='bantigny'){file='place-bantigny-sans-voitures.png';alt='Place Édouard Bantigny sans voitures, avec délimitation du secteur'}
+  else if(mode==='gare'){file='zone-gare-reference.png';alt='Vue détaillée de la Gare'}
+  else if(mode==='sud'){file='plan-sud.png';alt='Grand-Rue et place Bantigny, partie sud'}
+
+  const sameFile=map.getAttribute('src')===file;
+  mapMode=mode;
+  if(!sameFile){
+    map.src=file;
+    map.alt=alt;
+    return true;
+  }
+  return false;
+}
+
+function getSectorTarget(id,mode){
+  if(!id)return null;
+  if(mode==='gare')return GARE_OUTLINES[id]||null;
+  if(mode==='bantigny'||CLEAN_VIEWS[mode]){
+    return [[0,0],[map.naturalWidth||1000,map.naturalHeight||800]];
+  }
+  if(mode==='ensemble'){
+    if(CLEAN_ROUTES[id])return CLEAN_ROUTES[id];
+    const s=SECTORS.find(x=>x.id===id);
+    if(s?.polygon)return s.polygon.map(p=>globalToMap(p));
+    if(s?.path)return s.path.map(p=>globalToMap(p));
+  }
+  return null;
+}
+
+function getVisibleBounds(){
+  const legendVisible=legend&&getComputedStyle(legend).display!=='none';
   const left=legendVisible?legend.offsetLeft+legend.offsetWidth+24:24;
   const panel=$('.panel');
-  const right=window.ADMIN_MODE&&view.clientWidth>700&&panel?panel.offsetWidth+36:24;
+  const panelVisible=panel&&getComputedStyle(panel).display!=='none';
+  const right=(window.ADMIN_MODE&&view.clientWidth>700&&panelVisible)?panel.offsetWidth+36:24;
   const top=32;
-  const bottom=window.ADMIN_MODE&&view.clientWidth<=700&&panel?panel.offsetHeight+80:96;
-  const w=Math.max(100,view.clientWidth-left-right),h=Math.max(100,view.clientHeight-top-bottom);
-  sc=Math.min(max,w/(x1-x0+64),h/(y1-y0+64));
-  min=Math.min(view.clientWidth/map.naturalWidth,view.clientHeight/map.naturalHeight)*.65;
-  tx=left+w/2-(x0+x1)/2*sc;
-  ty=top+h/2-(y0+y1)/2*sc;
+  const bottom=(window.ADMIN_MODE&&view.clientWidth<=700&&panelVisible)?panel.offsetHeight+80:96;
+  const w=Math.max(100,view.clientWidth-left-right);
+  const h=Math.max(100,view.clientHeight-top-bottom);
+  return {left,right,top,bottom,w,h};
+}
+
+fit=function(){
+  if(!map.naturalWidth)return;
+  const b=getVisibleBounds();
+  const pts=getSectorTarget(sectorEl.value,mapMode);
+  if(pts&&pts.length){
+    const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+    const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+    const pad=70;
+    sc=Math.min(max,b.w/(x1-x0+pad),b.h/(y1-y0+pad));
+    if(mapMode==='ensemble')sc=Math.min(sc,2.5);
+    else if(mapMode==='gare')sc=Math.min(sc,1.8);
+    min=Math.min(view.clientWidth/map.naturalWidth,view.clientHeight/map.naturalHeight)*0.65;
+    tx=b.left+b.w/2-(x0+x1)/2*sc;
+    ty=b.top+b.h/2-(y0+y1)/2*sc;
+  }else{
+    sc=Math.min(b.w/map.naturalWidth,b.h/map.naturalHeight);
+    min=sc*0.65;
+    tx=b.left+(b.w-map.naturalWidth*sc)/2;
+    ty=b.top+(b.h-map.naturalHeight*sc)/2;
+  }
   transform();
 };
 window.onresize=fit;
+
+function drawZones(){
+  const svg=$('#zones'),ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  svg.setAttribute('width',map.naturalWidth);
+  svg.setAttribute('height',map.naturalHeight);
+  svg.setAttribute('viewBox',`0 0 ${map.naturalWidth} ${map.naturalHeight}`);
+  svg.style.overflow='hidden';
+  if(legend){
+    legend.querySelectorAll('button').forEach(b=>{
+      b.classList.toggle('active',b.dataset.sector===sectorEl.value);
+      b.setAttribute('aria-pressed',String(b.dataset.sector===sectorEl.value));
+    });
+  }
+  if(!map.naturalWidth||mapMode!=='ensemble')return;
+  for(const s of SECTORS){
+    const active=!sectorEl.value||sectorEl.value===s.id;
+    const g=document.createElementNS(ns,'g');
+    const points=(s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p));
+    const width=s.routeWidth||s.width;
+    const d=points.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    const halo=document.createElementNS(ns,'path');
+    const band=document.createElementNS(ns,'path');
+    for(const p of [halo,band]){
+      p.setAttribute('d',d);
+      p.setAttribute('fill','none');
+      p.setAttribute('stroke-linecap','round');
+      p.setAttribute('stroke-linejoin','round');
+    }
+    halo.classList.add('sector-halo');
+    halo.setAttribute('stroke','#fff');
+    halo.setAttribute('stroke-width',sectorEl.value&&active?'12':'0');
+    halo.setAttribute('stroke-opacity',sectorEl.value&&active?'.9':'0');
+    band.classList.add('sector-band');
+    band.dataset.sector=s.id;
+    band.setAttribute('stroke',s.color);
+    band.setAttribute('stroke-width',sectorEl.value&&active?'7':'0');
+    band.setAttribute('stroke-opacity',sectorEl.value&&active?'.88':'0');
+    g.style.pointerEvents='stroke';
+    g.append(halo,band);
+    const title=document.createElementNS(ns,'title');
+    title.textContent=s.name;
+    g.append(title);
+    g.setAttribute('role','button');
+    g.setAttribute('tabindex','0');
+    g.setAttribute('aria-label',s.name);
+    g.onclick=e=>{e.stopPropagation();chooseSector(s.id)};
+    g.onpointerdown=e=>e.stopPropagation();
+    g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseSector(s.id)}};
+    svg.append(g);
+  }
+}
+
+render=function(){
+  markers.innerHTML='';
+  rows.forEach((r,i)=>{
+    const sec=sectorFor(r.rue),p=pointOnMap(r),m=document.createElement('button');
+    m.type='button';
+    m.className='marker'+(window.ADMIN_MODE?' admin-marker':'')+(i===selected?' selected':'');
+    m.dataset.index=i;
+    m.hidden=!!sectorEl.value&&sec?.id!==sectorEl.value||p[0]<0||p[1]<0||p[0]>map.naturalWidth||p[1]>map.naturalHeight;
+    m.style.left=p[0]+'px';
+    m.style.top=p[1]+'px';
+    m.style.backgroundColor=i===selected?'#ef4444':sec?.color||'#7c3aed';
+    m.textContent=r.emplacement;
+    m.setAttribute('aria-label',`${r.emplacement} — ${sec?.name||r.rue}`);
+    const tip=document.createElement('span');
+    tip.className='tip';
+    tip.textContent=r.emplacement+' — '+(sec?.name||r.rue);
+    m.append(tip);
+    m.onpointerdown=e=>markerDown(e,i);
+    m.onclick=e=>{e.stopPropagation();selectRow(i)};
+    markers.append(m);
+  });
+  drawZones();
+};
+
+selectRow=function(i,center=false){
+  if(!commit())return;
+  const r=rows[i],sec=sectorFor(r.rue);
+  if(sectorEl.value&&sectorEl.value!==sec?.id){
+    sectorEl.value=sec?.id||'';
+    sectorEl.dataset.previous=sectorEl.value;
+  }
+  const p=pointOnMap(r);
+  if(p[0]<0||p[1]<0||p[0]>map.naturalWidth||p[1]>map.naturalHeight){
+    let targetMode='ensemble';
+    if(sec?.id==='bantigny')targetMode='bantigny';
+    else if(CLEAN_VIEWS[sec?.id])targetMode=sec.id;
+    else if(sec?.legacy)targetMode='gare';
+    switchMap(targetMode);
+    map.addEventListener('load',()=>selectRow(i,center),{once:true});
+    return;
+  }
+  selected=i;
+  render();
+  if(center){
+    sc=Math.max(sc,Math.min(max,3.2));
+    const b=getVisibleBounds();
+    tx=b.left+b.w/2-p[0]*sc;
+    ty=b.top+b.h/2-p[1]*sc;
+    transform();
+  }
+  if(window.ADMIN_MODE){fillForm(r);return}
+  $('#info').style.display='block';
+  $('#iid').textContent=r.emplacement;
+  $('#irue').textContent=sec?.name||r.rue;
+  $('#inom').textContent=r.nom?'Exposant : '+r.nom:'';
+  $('#idim').textContent=r.dimension?'Dimension : '+r.dimension:'';
+  $('#istat').textContent=r.statut?'Statut : '+r.statut:'';
+};
+
+markerDown=function(e,i){
+  e.stopPropagation();
+  selectRow(i);
+  if(!window.ADMIN_MODE||!window.isUnlocked||window.isSaving||selected!==i)return;
+  e.preventDefault();
+  const move=ev=>{
+    const rect=view.getBoundingClientRect(),q=storedPoint(rows[i].rue,mapToGlobal([(ev.clientX-rect.left-tx)/sc,(ev.clientY-rect.top-ty)/sc]));
+    if(q.some(n=>!Number.isFinite(n)||n<0||n>100))return;
+    rows[i].x_pct=q[0];
+    rows[i].y_pct=q[1];
+    const p=pointOnMap(rows[i]),m=markers.children[i];
+    m.style.left=p[0]+'px';
+    m.style.top=p[1]+'px';
+    fillCoordinates(rows[i]);
+    markDirty();
+  };
+  const up=()=>{
+    window.removeEventListener('pointermove',move);
+    window.removeEventListener('pointerup',up);
+    window.removeEventListener('pointercancel',up);
+  };
+  window.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',up);
+  window.addEventListener('pointercancel',up);
+};
+
+function chooseSector(id){
+  if(!commit()){sectorEl.value=sectorEl.dataset.previous||'';return}
+  sectorEl.value=id;
+  sectorEl.dataset.previous=id;
+  selected=null;
+  if(window.resetSelection)resetSelection();
+  if($('#info'))$('#info').style.display='none';
+
+  const sec=SECTORS.find(s=>s.id===id);
+  let targetMode='ensemble';
+  if(id==='bantigny')targetMode='bantigny';
+  else if(CLEAN_VIEWS[id])targetMode=id;
+  else if(sec?.legacy)targetMode='gare';
+
+  const changed=switchMap(targetMode);
+  $('#sectorNote').textContent=sec?sec.name+(sec.note?' · '+sec.note:''):'10 secteurs · Choisissez un secteur pour voir ses emplacements';
+  render();
+
+  if(!changed&&map.complete&&map.naturalWidth){
+    fit();
+  }
+}
+
+// Initialisation des options de secteurs
+SECTORS.forEach(s=>{
+  const o=document.createElement('option');
+  o.value=s.id;
+  o.textContent=s.name;
+  sectorEl.append(o);
+});
+sectorEl.onchange=()=>chooseSector(sectorEl.value);
+
+// Options de vues détaillées dans le sélecteur
+const bantignyOption=document.createElement('option');
+bantignyOption.value='bantigny';
+bantignyOption.textContent='Détail place Bantigny';
+$('#baseMap').append(bantignyOption);
+
+for(const [id,v] of Object.entries(CLEAN_VIEWS)){
+  const o=document.createElement('option');
+  o.value=id;
+  o.textContent='Détail '+v.name;
+  $('#baseMap').append(o);
+}
+
+$('#baseMap').onchange=e=>{
+  if(!commit()){e.target.value=mapMode;return}
+  switchMap(e.target.value);
+  if(window.ADMIN_MODE&&selected!==null)map.addEventListener('load',()=>fillCoordinates(rows[selected]),{once:true});
+};
+
+map.onload=()=>{
+  $('#baseMap').value=mapMode;
+  render();
+  fit();
+  if(window.ADMIN_MODE&&selected!==null)fillCoordinates(rows[selected]);
+};
+
+$('#fit').onclick=()=>{if(commit())chooseSector('')};
+
+view.onwheel=e=>{
+  if(e.target.closest('.panel'))return;
+  e.preventDefault();
+  const r=view.getBoundingClientRect();
+  zoom(e.deltaY<0?1.12:.89,e.clientX-r.left,e.clientY-r.top);
+};
+
+// Légende latérale des secteurs
+const legend=document.createElement('nav');
+legend.className='sector-legend';
+legend.setAttribute('aria-label','Choisir un secteur');
+const legendTitle=document.createElement('strong');
+legendTitle.textContent='Les secteurs';
+legend.append(legendTitle);
+for(const s of SECTORS){
+  const b=document.createElement('button');
+  b.type='button';
+  b.dataset.sector=s.id;
+  b.style.setProperty('--sector-color',s.color);
+  b.textContent=s.name;
+  b.onclick=()=>chooseSector(s.id);
+  legend.append(b);
+}
+legend.onpointerdown=e=>e.stopPropagation();
+view.append(legend);
+
+switchMap('ensemble');
+if(map.complete&&map.naturalWidth){
+  render();
+  fit();
+}
