@@ -184,9 +184,10 @@ function drawZones(){
     if(window.ADMIN_MODE && window.sectorEditMode && sectorEl.value===s.id){
       const isPolygon = !!(outline && outline.length);
       const targetPaths = isPolygon ? [halo, poly] : [halo, band];
-      const pts = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (outline&&outline.length?outline:null) || s.path;
-      if(pts){
-        pts.forEach((p,idx)=>{
+      const rawPts = (mapMode==='gare'&&GARE_OUTLINES[s.id]) || (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || CLEAR_OUTLINES[s.id] || (outline&&outline.length?outline:null) || s.path;
+      if(rawPts && rawPts.length){
+        rawPts.forEach((p,idx)=>{
+          if(!p || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) return;
           const circle=document.createElementNS(ns,'circle');
           circle.setAttribute('cx',p[0].toFixed(1));
           circle.setAttribute('cy',p[1].toFixed(1));
@@ -205,18 +206,15 @@ function drawZones(){
               const rect=view.getBoundingClientRect();
               const mapX=Number(((ev.clientX-rect.left-tx)/sc).toFixed(1));
               const mapY=Number(((ev.clientY-rect.top-ty)/sc).toFixed(1));
+              if(!Number.isFinite(mapX)||!Number.isFinite(mapY))return;
               circle.setAttribute('cx',mapX.toFixed(1));
               circle.setAttribute('cy',mapY.toFixed(1));
+              rawPts[idx]=[mapX,mapY];
               if(mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]){
-                CLEAR_OUTLINES[s.id][idx]=[mapX,mapY];
                 s.polygon=CLEAR_OUTLINES[s.id].map(pt=>project(PLAN_TRANSFORM,pt));
-                const newD=CLEAR_OUTLINES[s.id].map((pt,i)=>(i?'L':'M')+pt[0].toFixed(1)+' '+pt[1].toFixed(1)).join(' ')+' Z';
-                targetPaths.forEach(path=>path&&path.setAttribute('d',newD));
-              }else if(s.path){
-                s.path[idx]=[mapX,mapY];
-                const newD=s.path.map((pt,i)=>(i?'L':'M')+pt[0].toFixed(1)+' '+pt[1].toFixed(1)).join(' ');
-                targetPaths.forEach(path=>path&&path.setAttribute('d',newD));
               }
+              const newD=rawPts.map((pt,i)=>(i?'L':'M')+pt[0].toFixed(1)+' '+pt[1].toFixed(1)).join(' ')+(isPolygon?' Z':'');
+              targetPaths.forEach(path=>path&&path.setAttribute('d',newD));
               if(window.updateSectorCodeBox)window.updateSectorCodeBox();
             };
             const up=ev=>{
