@@ -56,14 +56,14 @@ function switchMap(mode){
 function getSectorTarget(id,mode){
   if(!id)return null;
   if(mode==='gare')return GARE_OUTLINES[id]||null;
+  const s=SECTORS.find(x=>x.id===id);
+  if(s){
+    if(mode==='ensemble'&&CLEAN_ROUTES[id])return CLEAN_ROUTES[id];
+    if(s.polygon)return s.polygon.map(p=>globalToMap(p));
+    if(s.route||s.path)return (s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p));
+  }
   if(mode==='bantigny'||CLEAN_VIEWS[mode]){
     return [[0,0],[map.naturalWidth||1000,map.naturalHeight||800]];
-  }
-  if(mode==='ensemble'){
-    if(CLEAN_ROUTES[id])return CLEAN_ROUTES[id];
-    const s=SECTORS.find(x=>x.id===id);
-    if(s?.polygon)return s.polygon.map(p=>globalToMap(p));
-    if(s?.path)return s.path.map(p=>globalToMap(p));
   }
   return null;
 }
