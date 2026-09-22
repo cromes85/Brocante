@@ -7,7 +7,8 @@ const CLEAN_VIEWS={
   haussy:{file:'haussy-sans-voitures.png',name:'Avenue de Haussy',matrix:affine([[150/1032,120/830],[930/1032,670/830],[650/1032,320/830]],[[407,381],[529,475],[489,400]].map(p=>project(PLAN_TRANSFORM,p)))},
   souvenir:{file:'souvenir-sans-voitures.png',name:'Square du Souvenir',matrix:affine([[110/518,605/697],[390/518,20/697],[300/518,565/697]],[[407,381],[472,290],[445,390]].map(p=>project(PLAN_TRANSFORM,p)))},
   deschamps:{file:'deschamps-sans-voitures.png',name:'Rue Deschamps',matrix:affine([[487/1024,79/724],[813/1024,318/724],[931/1024,709.5/724]],[[288.1,272.0],[409.4,378.3],[456.2,542.6]].map(p=>project(PLAN_TRANSFORM,p)))},
-  deschamps_plan:{file:'deschamps-plan.png',name:'Rue Deschamps (Plan)',matrix:affine([[487/1024,79/724],[813/1024,318/724],[931/1024,709.5/724]],[[288.1,272.0],[409.4,378.3],[456.2,542.6]].map(p=>project(PLAN_TRANSFORM,p)))}
+  deschamps_plan:{file:'deschamps-plan.png',name:'Rue Deschamps (Plan)',matrix:affine([[487/1024,79/724],[813/1024,318/724],[931/1024,709.5/724]],[[288.1,272.0],[409.4,378.3],[456.2,542.6]].map(p=>project(PLAN_TRANSFORM,p)))},
+  delfosse:{file:'delfosse-sans-voitures.png',name:'Rue Delfosse',matrix:affine([[546/1024,90/724],[364/1024,350/724],[523/1024,557/724]],[[431.3,146.6],[297.1,336.5],[414.1,487.9]].map(p=>project(PLAN_TRANSFORM,p)))}
 };
 
 function globalToMap(p){
