@@ -129,7 +129,7 @@ function drawZones(){
       halo.setAttribute('d',d);
       halo.setAttribute('fill','none');
       halo.setAttribute('stroke','#fff');
-      halo.setAttribute('stroke-width',sectorEl.value&&active?'5':'0');
+      halo.setAttribute('stroke-width',sectorEl.value&&active?'3.5':'0');
       halo.setAttribute('stroke-opacity',sectorEl.value&&active?'.85':'0');
       halo.setAttribute('stroke-linejoin','round');
       halo.classList.add('sector-halo');
@@ -139,9 +139,9 @@ function drawZones(){
       poly.dataset.sector=s.id;
       poly.setAttribute('fill',s.color);
       poly.setAttribute('fill-opacity',sectorEl.value&&active?'.28':'0');
-      poly.setAttribute('stroke',s.color);
-      poly.setAttribute('stroke-width',sectorEl.value&&active?'2.5':'0');
-      poly.setAttribute('stroke-opacity',sectorEl.value&&active?'.95':'0');
+      poly.setAttribute('stroke','#38bdf8');
+      poly.setAttribute('stroke-width',sectorEl.value&&active?'1.5':'0');
+      poly.setAttribute('stroke-opacity',sectorEl.value&&active?'.85':'0');
       poly.setAttribute('stroke-linejoin','round');
       poly.classList.add('sector-poly');
 
@@ -161,13 +161,13 @@ function drawZones(){
       }
       halo.classList.add('sector-halo');
       halo.setAttribute('stroke','#fff');
-      halo.setAttribute('stroke-width',sectorEl.value&&active?'8':'0');
+      halo.setAttribute('stroke-width',sectorEl.value&&active?'4':'0');
       halo.setAttribute('stroke-opacity',sectorEl.value&&active?'.85':'0');
       band.classList.add('sector-band');
       band.dataset.sector=s.id;
-      band.setAttribute('stroke',s.color);
-      band.setAttribute('stroke-width',sectorEl.value&&active?'4':'0');
-      band.setAttribute('stroke-opacity',sectorEl.value&&active?'.88':'0');
+      band.setAttribute('stroke','#38bdf8');
+      band.setAttribute('stroke-width',sectorEl.value&&active?'2':'0');
+      band.setAttribute('stroke-opacity',sectorEl.value&&active?'.85':'0');
       g.style.pointerEvents='stroke';
       g.append(halo,band);
     }
