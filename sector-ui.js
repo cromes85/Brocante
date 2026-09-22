@@ -180,6 +180,51 @@ function drawZones(){
     g.onclick=e=>{e.stopPropagation();chooseSector(s.id)};
     g.onpointerdown=e=>e.stopPropagation();
     g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseSector(s.id)}};
+
+    if(window.ADMIN_MODE && window.sectorEditMode && sectorEl.value===s.id){
+      const pts = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (outline&&outline.length?outline:null);
+      if(pts){
+        pts.forEach((p,idx)=>{
+          const circle=document.createElementNS(ns,'circle');
+          circle.setAttribute('cx',p[0].toFixed(1));
+          circle.setAttribute('cy',p[1].toFixed(1));
+          circle.setAttribute('r','8');
+          circle.setAttribute('fill','#38bdf8');
+          circle.setAttribute('stroke','#ffffff');
+          circle.setAttribute('stroke-width','2.5');
+          circle.style.cursor='move';
+          circle.style.pointerEvents='all';
+          circle.onpointerdown=e=>{
+            e.stopPropagation();
+            e.preventDefault();
+            try{circle.setPointerCapture(e.pointerId)}catch(_){}
+            const move=ev=>{
+              const rect=view.getBoundingClientRect();
+              const mapX=(ev.clientX-rect.left-tx)/sc;
+              const mapY=(ev.clientY-rect.top-ty)/sc;
+              if(mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]){
+                CLEAR_OUTLINES[s.id][idx]=[Number(mapX.toFixed(1)),Number(mapY.toFixed(1))];
+                s.polygon=CLEAR_OUTLINES[s.id].map(pt=>project(PLAN_TRANSFORM,pt));
+              }else if(s.path){
+                s.path[idx]=[Number(mapX.toFixed(1)),Number(mapY.toFixed(1))];
+              }
+              drawZones();
+              if(window.updateSectorCodeBox)window.updateSectorCodeBox();
+            };
+            const up=()=>{
+              window.removeEventListener('pointermove',move);
+              window.removeEventListener('pointerup',up);
+              window.removeEventListener('pointercancel',up);
+            };
+            window.addEventListener('pointermove',move);
+            window.addEventListener('pointerup',up);
+            window.addEventListener('pointercancel',up);
+          };
+          g.append(circle);
+        });
+      }
+    }
+
     svg.append(g);
   }
 }
