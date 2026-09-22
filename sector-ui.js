@@ -118,11 +118,11 @@ function drawZones(){
       b.setAttribute('aria-pressed',String(b.dataset.sector===sectorEl.value));
     });
   }
-  if(!map.naturalWidth||mapMode!=='ensemble')return;
+  if(!map.naturalWidth)return;
   for(const s of SECTORS){
     const active=!sectorEl.value||sectorEl.value===s.id;
     const g=document.createElementNS(ns,'g');
-    const outline = CLEAR_OUTLINES[s.id] || (s.polygon ? s.polygon.map(p=>globalToMap(p)) : null);
+    const outline = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (s.polygon ? s.polygon.map(p=>globalToMap(p)) : null);
     if(outline && outline.length){
       const d = outline.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+' Z';
       const halo=document.createElementNS(ns,'path');
