@@ -182,16 +182,19 @@ function drawZones(){
     g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseSector(s.id)}};
 
     if(window.ADMIN_MODE && window.sectorEditMode && sectorEl.value===s.id){
-      const pts = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (outline&&outline.length?outline:null);
+      const isPolygon = !!(outline && outline.length);
+      const targetPaths = isPolygon ? [halo, poly] : [halo, band];
+      const pts = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (outline&&outline.length?outline:null) || s.path;
       if(pts){
         pts.forEach((p,idx)=>{
           const circle=document.createElementNS(ns,'circle');
           circle.setAttribute('cx',p[0].toFixed(1));
           circle.setAttribute('cy',p[1].toFixed(1));
-          circle.setAttribute('r','8');
+          circle.setAttribute('r','9');
           circle.setAttribute('fill','#38bdf8');
           circle.setAttribute('stroke','#ffffff');
           circle.setAttribute('stroke-width','2.5');
+          circle.classList.add('vertex-handle');
           circle.style.cursor='move';
           circle.style.pointerEvents='all';
           circle.onpointerdown=e=>{
@@ -200,21 +203,28 @@ function drawZones(){
             try{circle.setPointerCapture(e.pointerId)}catch(_){}
             const move=ev=>{
               const rect=view.getBoundingClientRect();
-              const mapX=(ev.clientX-rect.left-tx)/sc;
-              const mapY=(ev.clientY-rect.top-ty)/sc;
+              const mapX=Number(((ev.clientX-rect.left-tx)/sc).toFixed(1));
+              const mapY=Number(((ev.clientY-rect.top-ty)/sc).toFixed(1));
+              circle.setAttribute('cx',mapX.toFixed(1));
+              circle.setAttribute('cy',mapY.toFixed(1));
               if(mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]){
-                CLEAR_OUTLINES[s.id][idx]=[Number(mapX.toFixed(1)),Number(mapY.toFixed(1))];
+                CLEAR_OUTLINES[s.id][idx]=[mapX,mapY];
                 s.polygon=CLEAR_OUTLINES[s.id].map(pt=>project(PLAN_TRANSFORM,pt));
+                const newD=CLEAR_OUTLINES[s.id].map((pt,i)=>(i?'L':'M')+pt[0].toFixed(1)+' '+pt[1].toFixed(1)).join(' ')+' Z';
+                targetPaths.forEach(path=>path&&path.setAttribute('d',newD));
               }else if(s.path){
-                s.path[idx]=[Number(mapX.toFixed(1)),Number(mapY.toFixed(1))];
+                s.path[idx]=[mapX,mapY];
+                const newD=s.path.map((pt,i)=>(i?'L':'M')+pt[0].toFixed(1)+' '+pt[1].toFixed(1)).join(' ');
+                targetPaths.forEach(path=>path&&path.setAttribute('d',newD));
               }
-              drawZones();
               if(window.updateSectorCodeBox)window.updateSectorCodeBox();
             };
-            const up=()=>{
+            const up=ev=>{
+              try{circle.releasePointerCapture(ev.pointerId)}catch(_){}
               window.removeEventListener('pointermove',move);
               window.removeEventListener('pointerup',up);
               window.removeEventListener('pointercancel',up);
+              drawZones();
             };
             window.addEventListener('pointermove',move);
             window.addEventListener('pointerup',up);

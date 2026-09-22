@@ -148,6 +148,7 @@ button:active,.button:active{transform:scale(0.98)}
 #zones{position:absolute;left:0;top:0;pointer-events:none}
 #zones g{pointer-events:stroke;cursor:pointer}
 #zones g:focus{outline:3px solid #38bdf8}
+#zones circle.vertex-handle{pointer-events:all!important;cursor:move!important}
 
 /* SVG STYLES */
 .sector-poly,.sector-band,.sector-halo{
