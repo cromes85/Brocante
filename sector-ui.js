@@ -129,8 +129,8 @@ function drawZones(){
       halo.setAttribute('d',d);
       halo.setAttribute('fill','none');
       halo.setAttribute('stroke','#fff');
-      halo.setAttribute('stroke-width',sectorEl.value&&active?'3.5':'0');
-      halo.setAttribute('stroke-opacity',sectorEl.value&&active?'.85':'0');
+      halo.setAttribute('stroke-width',active?'3.5':'0');
+      halo.setAttribute('stroke-opacity',active?'.85':'0');
       halo.setAttribute('stroke-linejoin','round');
       halo.classList.add('sector-halo');
 
@@ -138,14 +138,14 @@ function drawZones(){
       poly.setAttribute('d',d);
       poly.dataset.sector=s.id;
       poly.setAttribute('fill',s.color);
-      poly.setAttribute('fill-opacity',sectorEl.value&&active?'.28':'0');
+      poly.setAttribute('fill-opacity',active?'.28':'0');
       poly.setAttribute('stroke','#38bdf8');
-      poly.setAttribute('stroke-width',sectorEl.value&&active?'1.5':'0');
-      poly.setAttribute('stroke-opacity',sectorEl.value&&active?'.85':'0');
+      poly.setAttribute('stroke-width',active?'1.5':'0');
+      poly.setAttribute('stroke-opacity',active?'.85':'0');
       poly.setAttribute('stroke-linejoin','round');
       poly.classList.add('sector-poly');
 
-      g.style.pointerEvents=sectorEl.value&&active?'all':'stroke';
+      g.style.pointerEvents=active?'all':'stroke';
       g.append(halo,poly);
     }else{
       const points=(s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p));
@@ -161,13 +161,13 @@ function drawZones(){
       }
       halo.classList.add('sector-halo');
       halo.setAttribute('stroke','#fff');
-      halo.setAttribute('stroke-width',sectorEl.value&&active?'4':'0');
-      halo.setAttribute('stroke-opacity',sectorEl.value&&active?'.85':'0');
+      halo.setAttribute('stroke-width',active?'4':'0');
+      halo.setAttribute('stroke-opacity',active?'.85':'0');
       band.classList.add('sector-band');
       band.dataset.sector=s.id;
       band.setAttribute('stroke','#38bdf8');
-      band.setAttribute('stroke-width',sectorEl.value&&active?'2':'0');
-      band.setAttribute('stroke-opacity',sectorEl.value&&active?'.85':'0');
+      band.setAttribute('stroke-width',active?'2':'0');
+      band.setAttribute('stroke-opacity',active?'.85':'0');
       g.style.pointerEvents='stroke';
       g.append(halo,band);
     }
@@ -181,7 +181,8 @@ function drawZones(){
     g.onpointerdown=e=>e.stopPropagation();
     g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseSector(s.id)}};
 
-    if(window.ADMIN_MODE && window.sectorEditMode && sectorEl.value===s.id){
+    const targetSectorId = sectorEl.value || (mapMode==='gare'?'gare':(CLEAN_VIEWS[mapMode]?mapMode:'gare'));
+    if(window.ADMIN_MODE && window.sectorEditMode && targetSectorId===s.id){
       const isPolygon = !!(outline && outline.length);
       const targetPaths = isPolygon ? [halo, poly] : [halo, band];
       const rawPts = (mapMode==='gare'&&GARE_OUTLINES[s.id]) || (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || CLEAR_OUTLINES[s.id] || (outline&&outline.length?outline:null) || s.path;
@@ -191,10 +192,10 @@ function drawZones(){
           const circle=document.createElementNS(ns,'circle');
           circle.setAttribute('cx',p[0].toFixed(1));
           circle.setAttribute('cy',p[1].toFixed(1));
-          circle.setAttribute('r','9');
+          circle.setAttribute('r','10');
           circle.setAttribute('fill','#38bdf8');
           circle.setAttribute('stroke','#ffffff');
-          circle.setAttribute('stroke-width','2.5');
+          circle.setAttribute('stroke-width','3');
           circle.classList.add('vertex-handle');
           circle.style.cursor='move';
           circle.style.pointerEvents='all';
