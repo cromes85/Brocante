@@ -181,13 +181,13 @@ function drawZones(){
     g.onpointerdown=e=>e.stopPropagation();
     g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseSector(s.id)}};
 
-    const targetSectorId = sectorEl.value || (mapMode==='gare'?'gare':(CLEAN_VIEWS[mapMode]?mapMode:'gare'));
-    if(window.ADMIN_MODE && window.sectorEditMode && targetSectorId===s.id){
+    const isTargetSector = sectorEl.value ? (sectorEl.value===s.id) : (s.id===(CLEAN_VIEWS[mapMode]?mapMode:(mapMode==='gare'?'gare':'gare')));
+    if(window.ADMIN_MODE && window.sectorEditMode && isTargetSector){
       const isPolygon = !!(outline && outline.length);
       const targetPaths = isPolygon ? [halo, poly] : [halo, band];
-      const rawPts = (mapMode==='gare'&&GARE_OUTLINES[s.id]) || (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || CLEAR_OUTLINES[s.id] || (outline&&outline.length?outline:null) || s.path;
-      if(rawPts && rawPts.length){
-        rawPts.forEach((p,idx)=>{
+      const pts = (outline && outline.length) ? outline : (s.route||s.path ? (s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p)) : null);
+      if(pts && pts.length){
+        pts.forEach((p,idx)=>{
           if(!p || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) return;
           const circle=document.createElementNS(ns,'circle');
           circle.setAttribute('cx',p[0].toFixed(1));
@@ -210,11 +210,20 @@ function drawZones(){
               if(!Number.isFinite(mapX)||!Number.isFinite(mapY))return;
               circle.setAttribute('cx',mapX.toFixed(1));
               circle.setAttribute('cy',mapY.toFixed(1));
-              rawPts[idx]=[mapX,mapY];
+              pts[idx]=[mapX,mapY];
               if(mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]){
+                CLEAR_OUTLINES[s.id][idx]=[mapX,mapY];
                 s.polygon=CLEAR_OUTLINES[s.id].map(pt=>project(PLAN_TRANSFORM,pt));
+              }else if(mapMode==='gare'&&GARE_OUTLINES[s.id]){
+                GARE_OUTLINES[s.id][idx]=[mapX,mapY];
+                s.polygon=GARE_OUTLINES[s.id].map(pt=>project(GARE_TRANSFORM,pt));
+              }else if(s.polygon){
+                s.polygon[idx]=mapToGlobal([mapX,mapY]);
+                if(CLEAR_OUTLINES[s.id])CLEAR_OUTLINES[s.id]=s.polygon.map(pt=>unproject(PLAN_TRANSFORM,pt));
+              }else if(s.path){
+                s.path[idx]=mapToGlobal([mapX,mapY]);
               }
-              const newD=rawPts.map((pt,i)=>(i?'L':'M')+pt[0].toFixed(1)+' '+pt[1].toFixed(1)).join(' ')+(isPolygon?' Z':'');
+              const newD=pts.map((pt,i)=>(i?'L':'M')+pt[0].toFixed(1)+' '+pt[1].toFixed(1)).join(' ')+(isPolygon?' Z':'');
               targetPaths.forEach(path=>path&&path.setAttribute('d',newD));
               if(window.updateSectorCodeBox)window.updateSectorCodeBox();
             };
