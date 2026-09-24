@@ -121,28 +121,21 @@ function drawZones(){
   if(!map.naturalWidth)return;
   for(const s of SECTORS){
     const active=!sectorEl.value||sectorEl.value===s.id;
+    const isSelected = sectorEl.value === s.id;
     const g=document.createElementNS(ns,'g');
     let halo=null, poly=null, band=null;
     const outline = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (s.polygon ? s.polygon.map(p=>globalToMap(p)) : null);
     if(outline && outline.length){
       const d = outline.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+' Z';
-      halo=document.createElementNS(ns,'path');
-      halo.setAttribute('d',d);
-      halo.setAttribute('fill','none');
-      halo.setAttribute('stroke','#fff');
-      halo.setAttribute('stroke-width',active?'3.5':'0');
-      halo.setAttribute('stroke-opacity',active?'.85':'0');
-      halo.setAttribute('stroke-linejoin','round');
-      halo.classList.add('sector-halo');
 
       poly=document.createElementNS(ns,'path');
       poly.setAttribute('d',d);
       poly.dataset.sector=s.id;
       poly.setAttribute('fill',s.color);
-      poly.setAttribute('fill-opacity',active?'.28':'0');
-      poly.setAttribute('stroke','#38bdf8');
-      poly.setAttribute('stroke-width',active?'2':'0');
-      poly.setAttribute('stroke-opacity',active?'.85':'0');
+      poly.setAttribute('fill-opacity',isSelected ? '0.45' : (active ? '0.28' : '0.04'));
+      poly.setAttribute('stroke',isSelected ? '#ffffff' : s.color);
+      poly.setAttribute('stroke-width',isSelected ? '3' : (active ? '2' : '0'));
+      poly.setAttribute('stroke-opacity',active ? '0.9' : '0');
       poly.setAttribute('stroke-linejoin','round');
       poly.classList.add('sector-poly');
 
@@ -152,25 +145,18 @@ function drawZones(){
       const points=(s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p));
       const width=s.routeWidth||s.width;
       const d=points.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
-      halo=document.createElementNS(ns,'path');
       band=document.createElementNS(ns,'path');
-      for(const p of [halo,band]){
-        p.setAttribute('d',d);
-        p.setAttribute('fill','none');
-        p.setAttribute('stroke-linecap','round');
-        p.setAttribute('stroke-linejoin','round');
-      }
-      halo.classList.add('sector-halo');
-      halo.setAttribute('stroke','#fff');
-      halo.setAttribute('stroke-width',active?'4':'0');
-      halo.setAttribute('stroke-opacity',active?'.85':'0');
+      band.setAttribute('d',d);
+      band.setAttribute('fill','none');
+      band.setAttribute('stroke-linecap','round');
+      band.setAttribute('stroke-linejoin','round');
       band.classList.add('sector-band');
       band.dataset.sector=s.id;
-      band.setAttribute('stroke','#38bdf8');
-      band.setAttribute('stroke-width',active?'2':'0');
-      band.setAttribute('stroke-opacity',active?'.85':'0');
+      band.setAttribute('stroke',isSelected ? '#ffffff' : s.color);
+      band.setAttribute('stroke-width',isSelected ? '3' : (active ? '2' : '0'));
+      band.setAttribute('stroke-opacity',active ? '0.9' : '0');
       g.style.pointerEvents='stroke';
-      g.append(halo,band);
+      g.append(band);
     }
     const title=document.createElementNS(ns,'title');
     title.textContent=s.name;
@@ -185,7 +171,7 @@ function drawZones(){
     const isTargetSector = sectorEl.value ? (sectorEl.value===s.id) : (s.id===(CLEAN_VIEWS[mapMode]?mapMode:(mapMode==='gare'?'gare':'gare')));
     if(window.ADMIN_MODE && window.sectorEditMode && isTargetSector){
       const isPolygon = !!(outline && outline.length);
-      const targetPaths = isPolygon ? [poly] : [halo, band];
+      const targetPaths = isPolygon ? [poly] : [band];
       const pts = (outline && outline.length) ? outline : (s.route||s.path ? (s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p)) : null);
       if(pts && pts.length){
         pts.forEach((p,idx)=>{
