@@ -81,3 +81,5 @@ for(const s of SECTORS){s.polygon=CLEAR_OUTLINES[s.id].map(p=>project(PLAN_TRANS
 function sectorFor(rue){const s=String(rue||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');if(s.includes('rampe')||s.includes('placedelagare')||s==='gare')return SECTORS[0];for(const [word,id] of [['brichant',1],['marais',2],['catherine',3],['delfosse',4],['deschamps',5],['dechamps',5],['souvenir',6],['haussy',7],['bantigny',8],['grandrue',9]])if(s.includes(word))return SECTORS[id];return null}
 function globalPoint(r){return sectorFor(r.rue)?.legacy?project(GARE_TRANSFORM,[r.x_pct*1402/100,r.y_pct*1122/100]):[r.x_pct*MAP_W/100,r.y_pct*MAP_H/100]}
 function storedPoint(rue,p){const legacy=sectorFor(rue)?.legacy,q=legacy?unproject(GARE_TRANSFORM,p):p;return [q[0]/(legacy?1402:MAP_W)*100,q[1]/(legacy?1122:MAP_H)*100]}
+window.CLEAR_OUTLINES=CLEAR_OUTLINES;
+window.GARE_OUTLINES=GARE_OUTLINES;

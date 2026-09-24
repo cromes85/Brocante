@@ -227,6 +227,7 @@ function drawZones(){
               const newD=pts.map((pt,i)=>(i?'L':'M')+pt[0].toFixed(1)+' '+pt[1].toFixed(1)).join(' ')+(isPolygon?' Z':'');
               targetPaths.forEach(path=>path&&path.setAttribute('d',newD));
               if(window.updateSectorCodeBox)window.updateSectorCodeBox();
+              if(window.syncSectorOutlinesToRows)window.syncSectorOutlinesToRows();
             };
             const up=ev=>{
               try{circle.releasePointerCapture(ev.pointerId)}catch(_){}
@@ -427,6 +428,31 @@ legend.onpointerdown=e=>e.stopPropagation();
 view.append(legend);
 
 switchMap('ensemble');
+function applyCustomSectorOutlines(dataStr){
+  if(!dataStr)return;
+  try{
+    const data=typeof dataStr==='string'?JSON.parse(dataStr):dataStr;
+    if(data.clear&&typeof data.clear==='object'){
+      Object.assign(CLEAR_OUTLINES,data.clear);
+    }
+    if(data.gare&&typeof data.gare==='object'){
+      Object.assign(GARE_OUTLINES,data.gare);
+    }
+    for(const s of SECTORS){
+      if(GARE_OUTLINES[s.id]){
+        s.polygon=GARE_OUTLINES[s.id].map(p=>project(GARE_TRANSFORM,p));
+      }else if(CLEAR_OUTLINES[s.id]){
+        s.polygon=CLEAR_OUTLINES[s.id].map(p=>project(PLAN_TRANSFORM,p));
+      }
+    }
+    if(window.drawZones)drawZones();
+  }catch(e){
+    console.warn('Erreur chargement des tracés:',e);
+  }
+}
+window.applyCustomSectorOutlines=applyCustomSectorOutlines;
+const initialLocalOutlines=localStorage.getItem('brocante_sector_outlines');
+if(initialLocalOutlines)applyCustomSectorOutlines(initialLocalOutlines);
 if(map.complete&&map.naturalWidth){
   render();
   fit();
