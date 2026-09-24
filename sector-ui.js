@@ -37,7 +37,7 @@ function commit(){return !window.ADMIN_MODE||(!window.isSaving&&(selected===null
 
 function switchMap(mode){
   const cv=CLEAN_VIEWS[mode];
-  let file='plan-clair.png',alt='Plan clair des dix secteurs de la brocante';
+  let file='plan-centre.png',alt='Plan des dix secteurs de la brocante';
   if(cv){file=cv.file;alt=cv.name+' sans voitures, avec délimitation du secteur'}
   else if(mode==='bantigny'){file='place-bantigny-sans-voitures.png';alt='Place Édouard Bantigny sans voitures, avec délimitation du secteur'}
   else if(mode==='gare'){file='zone-gare-reference.png';alt='Vue détaillée de la Gare'}
@@ -141,13 +141,13 @@ function drawZones(){
       poly.setAttribute('fill',s.color);
       poly.setAttribute('fill-opacity',active?'.28':'0');
       poly.setAttribute('stroke','#38bdf8');
-      poly.setAttribute('stroke-width',active?'1.5':'0');
+      poly.setAttribute('stroke-width',active?'2':'0');
       poly.setAttribute('stroke-opacity',active?'.85':'0');
       poly.setAttribute('stroke-linejoin','round');
       poly.classList.add('sector-poly');
 
       g.style.pointerEvents=active?'all':'stroke';
-      g.append(halo,poly);
+      g.append(poly);
     }else{
       const points=(s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p));
       const width=s.routeWidth||s.width;
@@ -185,7 +185,7 @@ function drawZones(){
     const isTargetSector = sectorEl.value ? (sectorEl.value===s.id) : (s.id===(CLEAN_VIEWS[mapMode]?mapMode:(mapMode==='gare'?'gare':'gare')));
     if(window.ADMIN_MODE && window.sectorEditMode && isTargetSector){
       const isPolygon = !!(outline && outline.length);
-      const targetPaths = isPolygon ? [halo, poly] : [halo, band];
+      const targetPaths = isPolygon ? [poly] : [halo, band];
       const pts = (outline && outline.length) ? outline : (s.route||s.path ? (s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p)) : null);
       if(pts && pts.length){
         pts.forEach((p,idx)=>{
