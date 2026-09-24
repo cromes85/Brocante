@@ -122,10 +122,11 @@ function drawZones(){
   for(const s of SECTORS){
     const active=!sectorEl.value||sectorEl.value===s.id;
     const g=document.createElementNS(ns,'g');
+    let halo=null, poly=null, band=null;
     const outline = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (s.polygon ? s.polygon.map(p=>globalToMap(p)) : null);
     if(outline && outline.length){
       const d = outline.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+' Z';
-      const halo=document.createElementNS(ns,'path');
+      halo=document.createElementNS(ns,'path');
       halo.setAttribute('d',d);
       halo.setAttribute('fill','none');
       halo.setAttribute('stroke','#fff');
@@ -134,7 +135,7 @@ function drawZones(){
       halo.setAttribute('stroke-linejoin','round');
       halo.classList.add('sector-halo');
 
-      const poly=document.createElementNS(ns,'path');
+      poly=document.createElementNS(ns,'path');
       poly.setAttribute('d',d);
       poly.dataset.sector=s.id;
       poly.setAttribute('fill',s.color);
@@ -151,8 +152,8 @@ function drawZones(){
       const points=(s.route||s.path).map(p=>globalToMap(s.route?project(PLAN_TRANSFORM,p):p));
       const width=s.routeWidth||s.width;
       const d=points.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
-      const halo=document.createElementNS(ns,'path');
-      const band=document.createElementNS(ns,'path');
+      halo=document.createElementNS(ns,'path');
+      band=document.createElementNS(ns,'path');
       for(const p of [halo,band]){
         p.setAttribute('d',d);
         p.setAttribute('fill','none');
