@@ -88,9 +88,7 @@ fit=function(){
     const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
     const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
     const pad=70;
-    sc=Math.min(max,b.w/(x1-x0+pad),b.h/(y1-y0+pad));
-    if(mapMode==='ensemble')sc=Math.min(sc,2.5);
-    else if(mapMode==='gare')sc=Math.min(sc,1.8);
+    sc=Math.min(max,Math.max(min,Math.min(b.w/(x1-x0+pad),b.h/(y1-y0+pad))));
     min=Math.min(view.clientWidth/map.naturalWidth,view.clientHeight/map.naturalHeight)*0.65;
     tx=b.left+b.w/2-(x0+x1)/2*sc;
     ty=b.top+b.h/2-(y0+y1)/2*sc;

@@ -6,7 +6,7 @@ if(!('sectorEl' in window)){
     configurable: true
   });
 }
-let rows=[],sc=1,tx=0,ty=0,min=.1,max=8,panning=false,startX=0,startY=0,originX=0,originY=0,selected=null,cloudVersion=null,loadEpoch=0;
+let rows=[],sc=1,tx=0,ty=0,min=.1,max=30,panning=false,startX=0,startY=0,originX=0,originY=0,selected=null,cloudVersion=null,loadEpoch=0;
 function transform(){stage.style.transform=`translate(${tx}px,${ty}px) scale(${sc})`}
 function fit(){if(!map.naturalWidth)return;sc=Math.min(view.clientWidth/map.naturalWidth,view.clientHeight/map.naturalHeight);min=sc*.65;tx=(view.clientWidth-map.naturalWidth*sc)/2;ty=(view.clientHeight-map.naturalHeight*sc)/2;transform()}
 function zoom(mult,cx=view.clientWidth/2,cy=view.clientHeight/2){const old=sc,ns=Math.max(min,Math.min(max,sc*mult)),wx=(cx-tx)/old,wy=(cy-ty)/old;sc=ns;tx=cx-wx*sc;ty=cy-wy*sc;transform()}
