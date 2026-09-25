@@ -1,5 +1,4 @@
 let mapMode='ensemble';
-const sectorEl=$('#sector');
 
 // Transformations affines pour chaque vue
 const BANTIGNY_TRANSFORM=affine([[279,72],[1185,830],[120,250]],[[530,492],[595,564],[514,518]].map(p=>project(PLAN_TRANSFORM,p)));

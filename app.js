@@ -1,5 +1,11 @@
 const DEFAULT_ROWS=Array.isArray(window.EMPLACEMENTS_DATA)?window.EMPLACEMENTS_DATA:[{emplacement:"G66",x_pct:55.5,y_pct:52.5,nom:"",rue:"Place de la Gare",dimension:"",statut:"Exemple"}];
 const $=s=>document.querySelector(s), view=$("#view"), stage=$("#stage"), map=$("#map"), markers=$("#markers"), statusEl=$("#status");
+if(!('sectorEl' in window)){
+  Object.defineProperty(window, 'sectorEl', {
+    get() { return document.querySelector('#sector') || { value: '', addEventListener() {}, append() {} }; },
+    configurable: true
+  });
+}
 let rows=[],sc=1,tx=0,ty=0,min=.1,max=8,panning=false,startX=0,startY=0,originX=0,originY=0,selected=null,cloudVersion=null,loadEpoch=0;
 function transform(){stage.style.transform=`translate(${tx}px,${ty}px) scale(${sc})`}
 function fit(){if(!map.naturalWidth)return;sc=Math.min(view.clientWidth/map.naturalWidth,view.clientHeight/map.naturalHeight);min=sc*.65;tx=(view.clientWidth-map.naturalWidth*sc)/2;ty=(view.clientHeight-map.naturalHeight*sc)/2;transform()}
