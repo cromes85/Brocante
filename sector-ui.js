@@ -37,7 +37,7 @@ function commit(){return !window.ADMIN_MODE||(!window.isSaving&&(selected===null
 
 function switchMap(mode){
   const cv=CLEAN_VIEWS[mode];
-  let file='plan-centre.png',alt='Plan des dix secteurs de la brocante';
+  let file='plan-clair.png',alt='Plan clair des dix secteurs de la brocante';
   if(cv){file=cv.file;alt=cv.name+' sans voitures, avec délimitation du secteur'}
   else if(mode==='bantigny'){file='place-bantigny-sans-voitures.png';alt='Place Édouard Bantigny sans voitures, avec délimitation du secteur'}
   else if(mode==='gare'){file='zone-gare-reference.png';alt='Vue détaillée de la Gare'}
@@ -132,10 +132,10 @@ function drawZones(){
       poly.setAttribute('d',d);
       poly.dataset.sector=s.id;
       poly.setAttribute('fill',s.color);
-      poly.setAttribute('fill-opacity',isSelected ? '0.45' : (active ? '0.28' : '0.04'));
+      poly.setAttribute('fill-opacity',isSelected ? '0.40' : (sectorEl.value ? '0.02' : '0.15'));
       poly.setAttribute('stroke',isSelected ? '#ffffff' : s.color);
-      poly.setAttribute('stroke-width',isSelected ? '3' : (active ? '2' : '0'));
-      poly.setAttribute('stroke-opacity',active ? '0.9' : '0');
+      poly.setAttribute('stroke-width',isSelected ? '3' : (sectorEl.value ? '0' : '1.5'));
+      poly.setAttribute('stroke-opacity',isSelected ? '1' : (sectorEl.value ? '0' : '0.7'));
       poly.setAttribute('stroke-linejoin','round');
       poly.classList.add('sector-poly');
 
@@ -153,8 +153,8 @@ function drawZones(){
       band.classList.add('sector-band');
       band.dataset.sector=s.id;
       band.setAttribute('stroke',isSelected ? '#ffffff' : s.color);
-      band.setAttribute('stroke-width',isSelected ? '3' : (active ? '2' : '0'));
-      band.setAttribute('stroke-opacity',active ? '0.9' : '0');
+      band.setAttribute('stroke-width',isSelected ? '3' : (sectorEl.value ? '0' : '1.5'));
+      band.setAttribute('stroke-opacity',isSelected ? '1' : (sectorEl.value ? '0' : '0.7'));
       g.style.pointerEvents='stroke';
       g.append(band);
     }
