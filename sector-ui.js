@@ -125,6 +125,9 @@ function drawZones(){
     const g=document.createElementNS(ns,'g');
     let halo=null, poly=null, band=null;
     const outline = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (s.polygon ? s.polygon.map(p=>globalToMap(p)) : null);
+    const isTargetSector = sectorEl.value ? (sectorEl.value===s.id) : (s.id===(CLEAN_VIEWS[mapMode]?mapMode:(mapMode==='gare'?'gare':'gare')));
+    const isEditing = window.ADMIN_MODE && window.sectorEditMode && isTargetSector;
+
     if(outline && outline.length){
       const d = outline.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+' Z';
 
@@ -132,10 +135,10 @@ function drawZones(){
       poly.setAttribute('d',d);
       poly.dataset.sector=s.id;
       poly.setAttribute('fill',s.color);
-      poly.setAttribute('fill-opacity',isSelected ? '0.40' : (sectorEl.value ? '0.02' : '0.15'));
-      poly.setAttribute('stroke',isSelected ? '#ffffff' : s.color);
-      poly.setAttribute('stroke-width',isSelected ? '3' : (sectorEl.value ? '0' : '1.5'));
-      poly.setAttribute('stroke-opacity',isSelected ? '1' : (sectorEl.value ? '0' : '0.7'));
+      poly.setAttribute('fill-opacity',isSelected ? '0.40' : (isEditing ? '0.25' : (sectorEl.value ? '0.02' : '0.10')));
+      poly.setAttribute('stroke',isSelected ? '#ffffff' : (isEditing ? '#06b6d4' : s.color));
+      poly.setAttribute('stroke-width',isSelected ? '3' : (isEditing ? '2.5' : (sectorEl.value ? '0' : '0')));
+      poly.setAttribute('stroke-opacity',isSelected ? '1' : (isEditing ? '1' : (sectorEl.value ? '0' : '0')));
       poly.setAttribute('stroke-linejoin','round');
       poly.classList.add('sector-poly');
 
@@ -152,9 +155,9 @@ function drawZones(){
       band.setAttribute('stroke-linejoin','round');
       band.classList.add('sector-band');
       band.dataset.sector=s.id;
-      band.setAttribute('stroke',isSelected ? '#ffffff' : s.color);
-      band.setAttribute('stroke-width',isSelected ? '3' : (sectorEl.value ? '0' : '1.5'));
-      band.setAttribute('stroke-opacity',isSelected ? '1' : (sectorEl.value ? '0' : '0.7'));
+      band.setAttribute('stroke',isSelected ? '#ffffff' : (isEditing ? '#06b6d4' : s.color));
+      band.setAttribute('stroke-width',isSelected ? '3' : (isEditing ? '2.5' : (sectorEl.value ? '0' : '0')));
+      band.setAttribute('stroke-opacity',isSelected ? '1' : (isEditing ? '1' : (sectorEl.value ? '0' : '0')));
       g.style.pointerEvents='stroke';
       g.append(band);
     }
@@ -201,12 +204,19 @@ function drawZones(){
               if(mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]){
                 CLEAR_OUTLINES[s.id][idx]=[mapX,mapY];
                 s.polygon=CLEAR_OUTLINES[s.id].map(pt=>project(PLAN_TRANSFORM,pt));
+                if(GARE_OUTLINES[s.id]){
+                  GARE_OUTLINES[s.id]=s.polygon.map(pt=>unproject(GARE_TRANSFORM,pt));
+                }
               }else if(mapMode==='gare'&&GARE_OUTLINES[s.id]){
                 GARE_OUTLINES[s.id][idx]=[mapX,mapY];
                 s.polygon=GARE_OUTLINES[s.id].map(pt=>project(GARE_TRANSFORM,pt));
+                if(CLEAR_OUTLINES[s.id]){
+                  CLEAR_OUTLINES[s.id]=s.polygon.map(pt=>unproject(PLAN_TRANSFORM,pt));
+                }
               }else if(s.polygon){
                 s.polygon[idx]=mapToGlobal([mapX,mapY]);
                 if(CLEAR_OUTLINES[s.id])CLEAR_OUTLINES[s.id]=s.polygon.map(pt=>unproject(PLAN_TRANSFORM,pt));
+                if(GARE_OUTLINES[s.id])GARE_OUTLINES[s.id]=s.polygon.map(pt=>unproject(GARE_TRANSFORM,pt));
               }else if(s.path){
                 s.path[idx]=mapToGlobal([mapX,mapY]);
               }

@@ -156,6 +156,18 @@ button:active,.button:active{transform:scale(0.98)}
 }
 .sector-halo{filter:drop-shadow(0 1px 2px #0f172a40)}
 .sector-poly{cursor:pointer}
+#zones g:hover .sector-poly {
+  fill-opacity: 0.35 !important;
+  stroke: #ffffff !important;
+  stroke-width: 2.5px !important;
+  stroke-opacity: 1 !important;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
+}
+#zones g:hover .sector-band {
+  stroke: #ffffff !important;
+  stroke-width: 3.5px !important;
+  stroke-opacity: 1 !important;
+}
 
 /* MARQUEURS SUR LA CARTE */
 .marker{
