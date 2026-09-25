@@ -123,7 +123,7 @@ function drawZones(){
     const isSelected = sectorEl.value === s.id;
     const g=document.createElementNS(ns,'g');
     let halo=null, poly=null, band=null;
-    const outline = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (s.polygon ? s.polygon.map(p=>globalToMap(p)) : null);
+    const outline = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (mapMode==='gare'&&GARE_OUTLINES[s.id]) || (s.polygon ? s.polygon.map(p=>globalToMap(p)) : null);
     const isTargetSector = sectorEl.value ? (sectorEl.value===s.id) : (s.id===(CLEAN_VIEWS[mapMode]?mapMode:(mapMode==='gare'?'gare':'gare')));
     const isEditing = window.ADMIN_MODE && window.sectorEditMode && isTargetSector;
 
