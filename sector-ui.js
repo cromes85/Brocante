@@ -41,7 +41,7 @@ function switchMap(mode){
   let file='plan-clair.png',alt='Plan clair des dix secteurs de la brocante';
   if(cv){file=cv.file;alt=cv.name+' sans voitures, avec délimitation du secteur'}
   else if(mode==='bantigny'){file='place-bantigny-sans-voitures.png';alt='Place Édouard Bantigny sans voitures, avec délimitation du secteur'}
-  else if(mode==='gare'){file='zone-gare-reference.png';alt='Vue détaillée de la Gare'}
+  else if(mode==='gare'){file='plan-clair.png';alt='Vue détaillée de la Gare'}
   else if(mode==='sud'){file='plan-sud.png';alt='Grand-Rue et place Bantigny, partie sud'}
 
   const sameFile=map.getAttribute('src')===file;
