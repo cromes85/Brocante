@@ -277,7 +277,6 @@ selectRow=function(i,center=false){
     let targetMode='ensemble';
     if(sec?.id==='bantigny')targetMode='bantigny';
     else if(CLEAN_VIEWS[sec?.id])targetMode=sec.id;
-    else if(sec?.legacy)targetMode='gare';
     switchMap(targetMode);
     map.addEventListener('load',()=>selectRow(i,center),{once:true});
     return;
@@ -338,7 +337,6 @@ function chooseSector(id){
   let targetMode='ensemble';
   if(id==='bantigny')targetMode='bantigny';
   else if(CLEAN_VIEWS[id])targetMode=id;
-  else if(sec?.legacy)targetMode='gare';
 
   const changed=switchMap(targetMode);
   $('#sectorNote').textContent=sec?sec.name+(sec.note?' · '+sec.note:''):'10 secteurs · Choisissez un secteur pour voir ses emplacements';
