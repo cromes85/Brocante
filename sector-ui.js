@@ -123,7 +123,7 @@ function drawZones(){
     const isSelected = sectorEl.value === s.id;
     const g=document.createElementNS(ns,'g');
     let halo=null, poly=null, band=null;
-    const outline = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (mapMode==='gare'&&GARE_OUTLINES[s.id]) || (s.polygon ? s.polygon.map(p=>globalToMap(p)) : null);
+    const outline = (mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]) || (mapMode==='gare'&&GARE_OUTLINES[s.id]) || CLEAR_OUTLINES[s.id] || s.polygon;
     const isTargetSector = sectorEl.value ? (sectorEl.value===s.id) : (s.id===(CLEAN_VIEWS[mapMode]?mapMode:(mapMode==='gare'?'gare':'gare')));
     const isEditing = window.ADMIN_MODE && window.sectorEditMode && isTargetSector;
 
@@ -201,22 +201,13 @@ function drawZones(){
               pts[idx]=[mapX,mapY];
               if(mapMode==='ensemble'&&CLEAR_OUTLINES[s.id]){
                 CLEAR_OUTLINES[s.id][idx]=[mapX,mapY];
-                s.polygon=CLEAR_OUTLINES[s.id].map(pt=>project(PLAN_TRANSFORM,pt));
-                if(GARE_OUTLINES[s.id]){
-                  GARE_OUTLINES[s.id]=s.polygon.map(pt=>unproject(GARE_TRANSFORM,pt));
-                }
+                s.polygon=CLEAR_OUTLINES[s.id];
               }else if(mapMode==='gare'&&GARE_OUTLINES[s.id]){
                 GARE_OUTLINES[s.id][idx]=[mapX,mapY];
-                s.polygon=GARE_OUTLINES[s.id].map(pt=>project(GARE_TRANSFORM,pt));
-                if(CLEAR_OUTLINES[s.id]){
-                  CLEAR_OUTLINES[s.id]=s.polygon.map(pt=>unproject(PLAN_TRANSFORM,pt));
-                }
               }else if(s.polygon){
-                s.polygon[idx]=mapToGlobal([mapX,mapY]);
-                if(CLEAR_OUTLINES[s.id])CLEAR_OUTLINES[s.id]=s.polygon.map(pt=>unproject(PLAN_TRANSFORM,pt));
-                if(GARE_OUTLINES[s.id])GARE_OUTLINES[s.id]=s.polygon.map(pt=>unproject(GARE_TRANSFORM,pt));
+                s.polygon[idx]=[mapX,mapY];
               }else if(s.path){
-                s.path[idx]=mapToGlobal([mapX,mapY]);
+                s.path[idx]=[mapX,mapY];
               }
               const newD=pts.map((pt,i)=>(i?'L':'M')+pt[0].toFixed(1)+' '+pt[1].toFixed(1)).join(' ')+(isPolygon?' Z':'');
               targetPaths.forEach(path=>path&&path.setAttribute('d',newD));
