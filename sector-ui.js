@@ -411,21 +411,31 @@ legend.onpointerdown=e=>e.stopPropagation();
 view.append(legend);
 
 switchMap('ensemble');
+function getCompactSectorOutlinesJSON(){
+  const compactClear={};
+  for(const [id,pts] of Object.entries(CLEAR_OUTLINES)){
+    if(Array.isArray(pts)){
+      compactClear[id]=pts.map(p=>[Number(p[0].toFixed(1)),Number(p[1].toFixed(1))]);
+    }
+  }
+  return JSON.stringify(compactClear);
+}
+window.getCompactSectorOutlinesJSON=getCompactSectorOutlinesJSON;
+
 function applyCustomSectorOutlines(dataStr){
   if(!dataStr)return;
   try{
     const data=typeof dataStr==='string'?JSON.parse(dataStr):dataStr;
-    if(data.clear&&typeof data.clear==='object'){
-      Object.assign(CLEAR_OUTLINES,data.clear);
+    const clearObj=data.clear||data;
+    if(clearObj&&typeof clearObj==='object'){
+      Object.assign(CLEAR_OUTLINES,clearObj);
     }
     if(data.gare&&typeof data.gare==='object'){
       Object.assign(GARE_OUTLINES,data.gare);
     }
     for(const s of SECTORS){
-      if(GARE_OUTLINES[s.id]){
-        s.polygon=GARE_OUTLINES[s.id].map(p=>project(GARE_TRANSFORM,p));
-      }else if(CLEAR_OUTLINES[s.id]){
-        s.polygon=CLEAR_OUTLINES[s.id].map(p=>project(PLAN_TRANSFORM,p));
+      if(CLEAR_OUTLINES[s.id]){
+        s.polygon=CLEAR_OUTLINES[s.id];
       }
     }
     if(window.drawZones)drawZones();
