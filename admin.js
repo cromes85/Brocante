@@ -13,12 +13,124 @@ function setPublicMode(isConst){localStorage.setItem('brocante_construction_mode
 function updateAdminToggleUI(){const isConst=getPublicMode();[$('#toggleConstruction'),$('#togglePublicMode')].forEach(btn=>{if(!btn)return;btn.textContent=isConst?'Mode public : 🚧 En construction':'Mode public : ✅ Normal';btn.className='button toggle-construction '+(isConst?'is-construction':'is-normal')});const hint=$('#publicModeHint');if(hint){hint.textContent=isConst?'Actuellement : le public voit le bandeau « En construction ».':'Actuellement : le site public est ouvert avec recherche et emplacements.'}}
 window.updateAdminToggleUI=updateAdminToggleUI;
 window.sectorEditMode=false;
+let isPlacingStallMode=false;
+let isDrawingNewOutline=false;
+
 function updateSectorCodeBox(){const secId=sectorEl.value||(CLEAN_VIEWS[mapMode]?mapMode:(mapMode==='gare'?'gare':'gare'));if(!secId)return;const box=$('#sectorCodeBox');if(!box)return;const sec=SECTORS.find(s=>s.id===secId);const raw=(mapMode==='gare'&&GARE_OUTLINES[secId])||CLEAR_OUTLINES[secId]||sec?.path||sec?.polygon;if(raw&&Array.isArray(raw)){const validPts=raw.filter(p=>Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1]));box.value=`${secId}: `+JSON.stringify(validPts.map(p=>[Number(p[0].toFixed(1)),Number(p[1].toFixed(1))]))}}
 window.updateSectorCodeBox=updateSectorCodeBox;
 function syncSectorOutlinesToRows(){const jsonStr=window.getCompactSectorOutlinesJSON?window.getCompactSectorOutlinesJSON():JSON.stringify(CLEAR_OUTLINES);localStorage.setItem('brocante_sector_outlines',jsonStr);let cfg=rows.find(r=>r.emplacement==='__SECTOR_OUTLINES__');if(!cfg){cfg={emplacement:'__SECTOR_OUTLINES__',nom:'',rue:'',dimension:'',statut:'',x_pct:0,y_pct:0};rows.push(cfg)}cfg.nom=jsonStr.slice(0,200);cfg.rue=jsonStr.slice(200,400);cfg.dimension=jsonStr.slice(400,600);cfg.statut=jsonStr.slice(600,800);markDirty()}
 window.syncSectorOutlinesToRows=syncSectorOutlinesToRows;
-function setupSectorEditor(){const secSec=$('#sectorEditSection'),secCtrl=$('#sectorEditControls'),toggleBtn=$('#toggleSectorEdit'),addBtn=$('#addSectorPoint'),removeBtn=$('#removeSectorPoint'),copyBtn=$('#copySectorCode'),saveOutlinesBtn=$('#saveSectorOutlinesBtn');if(!secSec||!toggleBtn)return;function updateVis(){const active=window.isUnlocked;secSec.classList.toggle('hidden',!active)}sectorEl.addEventListener('change',()=>{updateVis();if(window.sectorEditMode){updateSectorCodeBox();drawZones()}});toggleBtn.onclick=()=>{window.sectorEditMode=!window.sectorEditMode;if(window.sectorEditMode&&!sectorEl.value){sectorEl.value='gare';}toggleBtn.textContent=window.sectorEditMode?'✅ Masquer les poignées d’édition':'✏️ Éditer le tracé de ce secteur';secCtrl.classList.toggle('hidden',!window.sectorEditMode);if(window.sectorEditMode)updateSectorCodeBox();drawZones()};if(addBtn)addBtn.onclick=()=>{let secId=sectorEl.value||'gare';if(!sectorEl.value)sectorEl.value='gare';let pts=(mapMode==='gare'&&GARE_OUTLINES[secId])||CLEAR_OUTLINES[secId];if(!pts||!pts.length){const sec=SECTORS.find(s=>s.id===secId);if(sec&&sec.polygon){pts=sec.polygon;if(mapMode==='gare')GARE_OUTLINES[secId]=pts;else CLEAR_OUTLINES[secId]=pts}}if(!pts)pts=[];if(pts.length){const last=pts[pts.length-1];pts.push([Number((last[0]+15).toFixed(1)),Number((last[1]+15).toFixed(1))])}else{pts.push([400,300],[450,300],[425,350])}const sec=SECTORS.find(s=>s.id===secId);if(sec){sec.polygon=(mapMode==='gare'&&GARE_OUTLINES[secId])||CLEAR_OUTLINES[secId]}drawZones();updateSectorCodeBox();syncSectorOutlinesToRows()};if(removeBtn)removeBtn.onclick=()=>{let secId=sectorEl.value||'gare';if(!sectorEl.value)sectorEl.value='gare';const pts=(mapMode==='gare'&&GARE_OUTLINES[secId])||CLEAR_OUTLINES[secId];if(!pts||pts.length<=3)return;pts.pop();const sec=SECTORS.find(s=>s.id===secId);if(sec){sec.polygon=(mapMode==='gare'&&GARE_OUTLINES[secId])||CLEAR_OUTLINES[secId]}drawZones();updateSectorCodeBox();syncSectorOutlinesToRows()};if(copyBtn)copyBtn.onclick=()=>{const box=$('#sectorCodeBox');if(!box||!box.value)return;navigator.clipboard.writeText(box.value);statusEl.textContent='Code du tracé copié dans le presse-papiers !'};if(saveOutlinesBtn)saveOutlinesBtn.onclick=()=>{syncSectorOutlinesToRows();if($('#saveFile'))$('#saveFile').click()};updateVis()}
-function controls(){for(const id of ['#saveFile','#add','#importFile'])$(id).disabled=!window.isUnlocked||window.isSaving;$('#logout').classList.toggle('hidden',!window.isUnlocked);$('#login').classList.toggle('hidden',window.isUnlocked);$('#reload').disabled=window.isSaving;$('#editor').querySelectorAll('input,button').forEach(el=>el.disabled=window.isSaving);updateAdminToggleUI();setupSectorEditor()}
+
+function setupSectorEditor(){
+  const secSec=$('#sectorEditSection'),secCtrl=$('#sectorEditControls'),toggleBtn=$('#toggleSectorEdit'),addBtn=$('#addSectorPoint'),removeBtn=$('#removeSectorPoint'),copyBtn=$('#copySectorCode'),saveOutlinesBtn=$('#saveSectorOutlinesBtn'),redrawBtn=$('#redrawSectorBtn');
+  if(!secSec||!toggleBtn)return;
+  function updateVis(){const active=window.isUnlocked;secSec.classList.toggle('hidden',!active)}
+  sectorEl.addEventListener('change',()=>{updateVis();if(window.sectorEditMode){updateSectorCodeBox();drawZones()}});
+  toggleBtn.onclick=()=>{window.sectorEditMode=!window.sectorEditMode;if(window.sectorEditMode&&!sectorEl.value){sectorEl.value='gare';}toggleBtn.textContent=window.sectorEditMode?'✅ Masquer les poignées d’édition':'✏️ Éditer le tracé de ce secteur';secCtrl.classList.toggle('hidden',!window.sectorEditMode);if(window.sectorEditMode)updateSectorCodeBox();drawZones()};
+
+  if(redrawBtn){
+    redrawBtn.onclick=()=>{
+      if(!window.isUnlocked||!window.sectorEditMode)return;
+      const secId=sectorEl.value||'gare';
+      isDrawingNewOutline=!isDrawingNewOutline;
+      if(isDrawingNewOutline){
+        redrawBtn.textContent='✅ Valider le nouveau tracé';
+        redrawBtn.classList.remove('primary');
+        redrawBtn.classList.add('success');
+        CLEAR_OUTLINES[secId]=[];
+        const sec=SECTORS.find(s=>s.id===secId);
+        if(sec)sec.polygon=[];
+        statusEl.textContent='📍 Cliquez sur les coins de la rue sur la carte... (Cliquez sur Valider pour terminer)';
+        view.style.cursor='crosshair';
+      }else{
+        redrawBtn.textContent='✏️ Redessiner à la volée (Clics successifs)';
+        redrawBtn.classList.remove('success');
+        redrawBtn.classList.add('primary');
+        view.style.cursor='default';
+        statusEl.textContent='Nouveau tracé validé. N’oubliez pas de sauvegarder sur Google.';
+        syncSectorOutlinesToRows();
+      }
+      drawZones();
+      updateSectorCodeBox();
+    };
+  }
+
+  if(addBtn)addBtn.onclick=()=>{let secId=sectorEl.value||'gare';if(!sectorEl.value)sectorEl.value='gare';let pts=(mapMode==='gare'&&GARE_OUTLINES[secId])||CLEAR_OUTLINES[secId];if(!pts||!pts.length){const sec=SECTORS.find(s=>s.id===secId);if(sec&&sec.polygon){pts=sec.polygon;if(mapMode==='gare')GARE_OUTLINES[secId]=pts;else CLEAR_OUTLINES[secId]=pts}}if(!pts)pts=[];if(pts.length){const last=pts[pts.length-1];pts.push([Number((last[0]+15).toFixed(1)),Number((last[1]+15).toFixed(1))])}else{pts.push([400,300],[450,300],[425,350])}const sec=SECTORS.find(s=>s.id===secId);if(sec){sec.polygon=(mapMode==='gare'&&GARE_OUTLINES[secId])||CLEAR_OUTLINES[secId]}drawZones();updateSectorCodeBox();syncSectorOutlinesToRows()};
+  if(removeBtn)removeBtn.onclick=()=>{let secId=sectorEl.value||'gare';if(!sectorEl.value)sectorEl.value='gare';const pts=(mapMode==='gare'&&GARE_OUTLINES[secId])||CLEAR_OUTLINES[secId];if(!pts||pts.length<=3)return;pts.pop();const sec=SECTORS.find(s=>s.id===secId);if(sec){sec.polygon=(mapMode==='gare'&&GARE_OUTLINES[secId])||CLEAR_OUTLINES[secId]}drawZones();updateSectorCodeBox();syncSectorOutlinesToRows()};
+  if(copyBtn)copyBtn.onclick=()=>{const box=$('#sectorCodeBox');if(!box||!box.value)return;navigator.clipboard.writeText(box.value);statusEl.textContent='Code du tracé copié dans le presse-papiers !'};
+  if(saveOutlinesBtn)saveOutlinesBtn.onclick=()=>{syncSectorOutlinesToRows();if($('#saveFile'))$('#saveFile').click()};
+  updateVis();
+}
+
+function controls(){
+  for(const id of ['#saveFile','#add','#clickAddStall','#importFile'])if($(id))$(id).disabled=!window.isUnlocked||window.isSaving;
+  $('#logout').classList.toggle('hidden',!window.isUnlocked);
+  $('#login').classList.toggle('hidden',window.isUnlocked);
+  $('#reload').disabled=window.isSaving;
+  $('#editor').querySelectorAll('input,button').forEach(el=>el.disabled=window.isSaving);
+  updateAdminToggleUI();
+  setupSectorEditor();
+}
+
+// Clic direct sur la carte pour poser un emplacement
+const clickAddBtn=$('#clickAddStall');
+if(clickAddBtn){
+  clickAddBtn.onclick=()=>{
+    if(!window.isUnlocked||window.isSaving)return;
+    isPlacingStallMode=!isPlacingStallMode;
+    clickAddBtn.textContent=isPlacingStallMode?'❌ Annuler la pose sur la carte':'📍 Poser un emplacement sur la carte (Clic)';
+    clickAddBtn.classList.toggle('danger',isPlacingStallMode);
+    view.style.cursor=isPlacingStallMode?'crosshair':'default';
+    if(isPlacingStallMode)statusEl.textContent='Cliquez à l’endroit exact sur la carte pour poser le nouvel emplacement.';
+  };
+}
+
+view.addEventListener('click',e=>{
+  if(!window.isUnlocked)return;
+  if(e.target.closest('.panel')||e.target.closest('.controls')||e.target.closest('.marker'))return;
+  const rect=view.getBoundingClientRect();
+  const mapX=(e.clientX-rect.left-tx)/sc;
+  const mapY=(e.clientY-rect.top-ty)/sc;
+
+  if(isDrawingNewOutline&&window.sectorEditMode){
+    const secId=sectorEl.value||'gare';
+    const px=Number(mapX.toFixed(1)),py=Number(mapY.toFixed(1));
+    if(!CLEAR_OUTLINES[secId])CLEAR_OUTLINES[secId]=[];
+    CLEAR_OUTLINES[secId].push([px,py]);
+    const sec=SECTORS.find(s=>s.id===secId);
+    if(sec)sec.polygon=CLEAR_OUTLINES[secId];
+    drawZones();
+    updateSectorCodeBox();
+    return;
+  }
+
+  if(isPlacingStallMode){
+    const x_pct=Math.max(0,Math.min(100,(mapX/map.naturalWidth)*100));
+    const y_pct=Math.max(0,Math.min(100,(mapY/map.naturalHeight)*100));
+    const targetSectorId=sectorEl.value||'gare';
+    const sec=SECTORS.find(s=>s.id===targetSectorId);
+    const defaultRue=sec?sec.name:'Place de la Gare';
+    let defaultId='G'+(rows.filter(r=>!['__SITE_MODE__','__SECTOR_OUTLINES__'].includes(r.emplacement)).length+1);
+    const empId=prompt('Numéro du nouvel emplacement à poser ici (ex: G66, B12) :',defaultId);
+    if(!empId||!empId.trim()){
+      isPlacingStallMode=false;
+      if(clickAddBtn){clickAddBtn.textContent='📍 Poser un emplacement sur la carte (Clic)';clickAddBtn.classList.remove('danger');}
+      view.style.cursor='default';
+      return;
+    }
+    const cleanId=empId.trim();
+    rows.push({emplacement:cleanId,x_pct:Number(x_pct.toFixed(2)),y_pct:Number(y_pct.toFixed(2)),nom:'',rue:defaultRue,dimension:'',statut:''});
+    selected=rows.length-1;
+    render();
+    fillForm(rows[selected]);
+    markDirty();
+    isPlacingStallMode=false;
+    if(clickAddBtn){clickAddBtn.textContent='📍 Poser un emplacement sur la carte (Clic)';clickAddBtn.classList.remove('danger');}
+    view.style.cursor='default';
+    statusEl.textContent=`Emplacement ${cleanId} posé sur la carte ! N’oubliez pas de sauvegarder.`;
+  }
+});
+
 $('#editor').onsubmit=e=>{e.preventDefault();if(window.isUnlocked&&!window.isSaving)applyForm()};
 $('#editor').oninput=()=>{if(window.isUnlocked)markDirty()};
 $('#login').onsubmit=async e=>{e.preventDefault();const button=$('#login button');button.disabled=true;try{const auth=await CloudApi.login($('#password').value);window.adminToken=auth.token;const data=await CloudApi.read(auth.token);rows=data.rows.map(cleanRow);cloudVersion=data.version;selected=null;window.isUnlocked=true;$('#password').value='';resetEditor();render();controls();$('#empty').textContent='Cliquez sur un marqueur, puis déplacez-le ou modifiez ses champs.';statusEl.textContent='Connecté — données Google chargées.'}catch(err){statusEl.textContent=err.message}finally{button.disabled=false}};

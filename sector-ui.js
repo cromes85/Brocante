@@ -134,10 +134,10 @@ function drawZones(){
       poly.setAttribute('d',d);
       poly.dataset.sector=s.id;
       poly.setAttribute('fill',s.color);
-      poly.setAttribute('fill-opacity',isSelected ? '0.40' : (isEditing ? '0.25' : (sectorEl.value ? '0.02' : '0.10')));
+      poly.setAttribute('fill-opacity',isSelected ? '0.40' : (isEditing ? '0.25' : (sectorEl.value ? '0.03' : '0.15')));
       poly.setAttribute('stroke',isSelected ? '#ffffff' : (isEditing ? '#06b6d4' : s.color));
-      poly.setAttribute('stroke-width',isSelected ? '3' : (isEditing ? '2.5' : (sectorEl.value ? '0' : '0')));
-      poly.setAttribute('stroke-opacity',isSelected ? '1' : (isEditing ? '1' : (sectorEl.value ? '0' : '0')));
+      poly.setAttribute('stroke-width',isSelected ? '3.5' : (isEditing ? '2.5' : (sectorEl.value ? '0.8' : '1.5')));
+      poly.setAttribute('stroke-opacity',isSelected ? '1' : (isEditing ? '1' : (sectorEl.value ? '0.2' : '0.85')));
       poly.setAttribute('stroke-linejoin','round');
       poly.classList.add('sector-poly');
 
@@ -155,8 +155,8 @@ function drawZones(){
       band.classList.add('sector-band');
       band.dataset.sector=s.id;
       band.setAttribute('stroke',isSelected ? '#ffffff' : (isEditing ? '#06b6d4' : s.color));
-      band.setAttribute('stroke-width',isSelected ? '3' : (isEditing ? '2.5' : (sectorEl.value ? '0' : '0')));
-      band.setAttribute('stroke-opacity',isSelected ? '1' : (isEditing ? '1' : (sectorEl.value ? '0' : '0')));
+      band.setAttribute('stroke-width',isSelected ? '3.5' : (isEditing ? '2.5' : (sectorEl.value ? '0.8' : '1.5')));
+      band.setAttribute('stroke-opacity',isSelected ? '1' : (isEditing ? '1' : (sectorEl.value ? '0.2' : '0.85')));
       g.style.pointerEvents='stroke';
       g.append(band);
     }
@@ -446,6 +446,21 @@ function applyCustomSectorOutlines(dataStr){
 window.applyCustomSectorOutlines=applyCustomSectorOutlines;
 const initialLocalOutlines=localStorage.getItem('brocante_sector_outlines');
 if(initialLocalOutlines)applyCustomSectorOutlines(initialLocalOutlines);
+let currentMapType='vector';
+function toggleMapType(){
+  currentMapType=(currentMapType==='vector')?'satellite':'vector';
+  const btn=$('#toggleMapLayer');
+  if(currentMapType==='satellite'){
+    map.src='zone-gare-reference.png';
+    if(btn)btn.textContent='🛰️ Vue Satellite';
+  }else{
+    map.src='plan-clair.png';
+    if(btn)btn.textContent='🗺️ Plan Vectoriel';
+  }
+}
+window.toggleMapType=toggleMapType;
+if($('#toggleMapLayer'))$('#toggleMapLayer').onclick=toggleMapType;
+
 if(map.complete&&map.naturalWidth){
   render();
   fit();
