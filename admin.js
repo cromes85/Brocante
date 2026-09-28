@@ -62,6 +62,13 @@ function setupSectorEditor(){
   updateVis();
 }
 
+function setupQuickStatusButtons(){
+  const bLibre=$('#btnSetLibre'),bReserve=$('#btnSetReserve'),bBloque=$('#btnSetBloque');
+  if(bLibre)bLibre.onclick=()=>{if(selected===null)return;fields.statut.value='Libre';applyForm()};
+  if(bReserve)bReserve.onclick=()=>{if(selected===null)return;fields.statut.value='Réservé';applyForm()};
+  if(bBloque)bBloque.onclick=()=>{if(selected===null)return;fields.statut.value='Bloqué';applyForm()};
+}
+
 function controls(){
   for(const id of ['#saveFile','#add','#clickAddStall','#importFile'])if($(id))$(id).disabled=!window.isUnlocked||window.isSaving;
   $('#logout').classList.toggle('hidden',!window.isUnlocked);
@@ -70,6 +77,7 @@ function controls(){
   $('#editor').querySelectorAll('input,button').forEach(el=>el.disabled=window.isSaving);
   updateAdminToggleUI();
   setupSectorEditor();
+  setupQuickStatusButtons();
 }
 
 // Clic direct sur la carte pour poser un emplacement

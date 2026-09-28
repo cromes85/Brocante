@@ -236,6 +236,7 @@ function drawZones(){
 
 render=function(){
   markers.innerHTML='';
+  if(window.updateCounters)window.updateCounters();
   if(!window.ADMIN_MODE&&typeof isConstructionMode==='function'&&isConstructionMode()){
     markers.classList.add('hidden');
     drawZones();
@@ -243,20 +244,20 @@ render=function(){
   }
   markers.classList.remove('hidden');
   rows.forEach((r,i)=>{
-    if(r.emplacement==='__SITE_MODE__')return;
+    if(['__SITE_MODE__','__SECTOR_OUTLINES__'].includes(r.emplacement))return;
     const sec=sectorFor(r.rue),p=pointOnMap(r),m=document.createElement('button');
+    const st=window.getStallStatus?window.getStallStatus(r):'libre';
     m.type='button';
-    m.className='marker'+(window.ADMIN_MODE?' admin-marker':'')+(i===selected?' selected':'');
+    m.className=`marker status-${st}`+(window.ADMIN_MODE?' admin-marker':'')+(i===selected?' selected':'');
     m.dataset.index=i;
     m.hidden=!!sectorEl.value&&sec?.id!==sectorEl.value||p[0]<0||p[1]<0||p[0]>map.naturalWidth||p[1]>map.naturalHeight;
     m.style.left=p[0]+'px';
     m.style.top=p[1]+'px';
-    m.style.backgroundColor=i===selected?'#ef4444':sec?.color||'#7c3aed';
     m.textContent=r.emplacement;
     m.setAttribute('aria-label',`${r.emplacement} — ${sec?.name||r.rue}`);
     const tip=document.createElement('span');
     tip.className='tip';
-    tip.textContent=r.emplacement+' — '+(sec?.name||r.rue);
+    tip.textContent=r.emplacement+' — '+(sec?.name||r.rue)+(r.nom?` (${r.nom})`:'');
     m.append(tip);
     m.onpointerdown=e=>markerDown(e,i);
     m.onclick=e=>{e.stopPropagation();selectRow(i)};
@@ -291,12 +292,14 @@ selectRow=function(i,center=false){
     transform();
   }
   if(window.ADMIN_MODE){fillForm(r);return}
+  const st=window.getStallStatus?window.getStallStatus(r):'libre';
+  let badgeHtml=st==='libre'?'<span class="status-badge badge-libre">🟢 Disponible</span>':(st==='reserve'?'<span class="status-badge badge-reserve">🔴 Réservé</span>':'<span class="status-badge badge-bloque">🔒 Bloqué</span>');
   $('#info').style.display='block';
-  $('#iid').textContent=r.emplacement;
-  $('#irue').textContent=sec?.name||r.rue;
-  $('#inom').textContent=r.nom?'Exposant : '+r.nom:'';
-  $('#idim').textContent=r.dimension?'Dimension : '+r.dimension:'';
-  $('#istat').textContent=r.statut?'Statut : '+r.statut:'';
+  $('#iid').innerHTML=`<span style="font-size:20px;font-weight:800;color:#38bdf8">${r.emplacement}</span> ${badgeHtml}`;
+  $('#irue').textContent='📍 Secteur : '+(sec?.name||r.rue);
+  $('#inom').innerHTML=r.nom?`👤 Exposant : <strong>${r.nom}</strong>`:'<em style="color:#94a3b8">Aucun exposant assigné</em>';
+  $('#idim').textContent=r.dimension?`📐 Surface : ${r.dimension}`:'';
+  $('#istat').innerHTML=`🏷️ Statut : ${r.statut||(st==='libre'?'Libre':(st==='reserve'?'Réservé':'Bloqué'))}`;
 };
 
 markerDown=function(e,i){
