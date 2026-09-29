@@ -210,7 +210,7 @@ function handleMapClick(clientX,clientY,target){
         const stallId=prefix+(startNum+k);
 
         let finalPos=[dispX,dispY];
-        if(mapMode&&mapMode!=='ensemble'&&typeof window.fromDisplayed==='function'){
+        if(typeof window.fromDisplayed==='function'){
           finalPos=window.fromDisplayed(defaultRue,dispX,dispY);
         }
 
@@ -263,7 +263,7 @@ function handleMapClick(clientX,clientY,target){
     }
     const cleanId=empId.trim();
     let finalPos=[x_pct,y_pct];
-    if(mapMode&&mapMode!=='ensemble'&&typeof window.fromDisplayed==='function'){
+    if(typeof window.fromDisplayed==='function'){
       finalPos=window.fromDisplayed(defaultRue,x_pct,y_pct);
     }
     rows.push({emplacement:cleanId,x_pct:Number(finalPos[0].toFixed(4)),y_pct:Number(finalPos[1].toFixed(4)),nom:'',rue:defaultRue,dimension:'',statut:''});
