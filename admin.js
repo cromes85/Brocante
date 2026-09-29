@@ -135,12 +135,39 @@ if(clickAddRowBtn){
   };
 }
 
+let pointerDownPos=null;
+view.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.panel')||e.target.closest('.controls')||e.target.closest('.marker')||e.target.closest('.sector-legend')||e.target.closest('.vertex-handle')){
+    pointerDownPos=null;return;
+  }
+  pointerDownPos={x:e.clientX,y:e.clientY};
+});
+
+view.addEventListener('pointerup',e=>{
+  if(!pointerDownPos)return;
+  const dist=Math.hypot(e.clientX-pointerDownPos.x,e.clientY-pointerDownPos.y);
+  pointerDownPos=null;
+  if(dist<6){
+    handleMapClick(e.clientX,e.clientY,e.target);
+  }
+});
+
 view.addEventListener('click',e=>{
+  handleMapClick(e.clientX,e.clientY,e.target);
+});
+
+let lastHandledClickTime=0;
+function handleMapClick(clientX,clientY,target){
+  const now=Date.now();
+  if(now-lastHandledClickTime<150)return;
+  lastHandledClickTime=now;
+
   if(!window.isUnlocked)return;
-  if(e.target.closest('.panel')||e.target.closest('.controls')||e.target.closest('.marker'))return;
+  if(target&&(target.closest('.panel')||target.closest('.controls')||target.closest('.marker')||target.closest('.sector-legend')||target.closest('.vertex-handle')))return;
+
   const rect=view.getBoundingClientRect();
-  const mapX=(e.clientX-rect.left-tx)/sc;
-  const mapY=(e.clientY-rect.top-ty)/sc;
+  const mapX=(clientX-rect.left-tx)/sc;
+  const mapY=(clientY-rect.top-ty)/sc;
 
   if(window.isDrawingNewOutline&&window.sectorEditMode){
     const secId=sectorEl.value||'gare';
@@ -183,7 +210,7 @@ view.addEventListener('click',e=>{
         const stallId=prefix+(startNum+k);
 
         let finalPos=[dispX,dispY];
-        if(typeof window.fromDisplayed==='function'){
+        if(mapMode&&mapMode!=='ensemble'&&typeof window.fromDisplayed==='function'){
           finalPos=window.fromDisplayed(defaultRue,dispX,dispY);
         }
 
@@ -215,7 +242,7 @@ view.addEventListener('click',e=>{
         clickAddRowBtn.classList.remove('danger');
       }
       view.style.cursor='default';
-      statusEl.textContent=`✅ Rangée de ${count} emplacements (${prefix}${startNum} → ${prefix}${startNum+count-1}) alignée le long de la rue !`;
+      statusEl.textContent=`✅ Rangée de ${count} emplacements (${prefix}${startNum} → ${prefix}${startNum+count-1}) alignée le long du trottoir !`;
       return;
     }
   }
@@ -236,7 +263,7 @@ view.addEventListener('click',e=>{
     }
     const cleanId=empId.trim();
     let finalPos=[x_pct,y_pct];
-    if(typeof window.fromDisplayed==='function'){
+    if(mapMode&&mapMode!=='ensemble'&&typeof window.fromDisplayed==='function'){
       finalPos=window.fromDisplayed(defaultRue,x_pct,y_pct);
     }
     rows.push({emplacement:cleanId,x_pct:Number(finalPos[0].toFixed(4)),y_pct:Number(finalPos[1].toFixed(4)),nom:'',rue:defaultRue,dimension:'',statut:''});
@@ -249,7 +276,7 @@ view.addEventListener('click',e=>{
     view.style.cursor='default';
     statusEl.textContent=`Emplacement ${cleanId} posé sur la carte ! N’oubliez pas de sauvegarder.`;
   }
-});
+}
 
 $('#editor').onsubmit=e=>{e.preventDefault();if(window.isUnlocked&&!window.isSaving)applyForm()};
 $('#editor').oninput=()=>{if(window.isUnlocked)markDirty()};
