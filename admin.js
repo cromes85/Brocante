@@ -117,16 +117,21 @@ if(clickAddRowBtn){
     if(!startNumStr)return;
     const countStr=prompt('Nombre d\'emplacements à générer dans la rue (ex: 15) :','10');
     if(!countStr)return;
+    const sideStr=prompt('Côté du trottoir (1 = Trottoir Droit, 2 = Trottoir Gauche, 3 = Exactement sur la ligne) :','1');
     const startNum=parseInt(startNumStr,10)||1;
     const count=parseInt(countStr,10)||10;
-    window.rowStallConfig={prefix:prefix.trim(),startNum,count};
+    let sideOffset=15;
+    if(sideStr==='2')sideOffset=-15;
+    else if(sideStr==='3')sideOffset=0;
+
+    window.rowStallConfig={prefix:prefix.trim(),startNum,count,sideOffset};
     window.rowStallP1=null;
     window.isRowStallMode=true;
     window.isPlacingStallMode=false;
     clickAddRowBtn.textContent='❌ Annuler la rangée';
     clickAddRowBtn.classList.add('danger');
     view.style.cursor='crosshair';
-    statusEl.textContent=`📍 ÉTAPE 1/2 : Cliquez sur le DEBUT de la rue pour aligner les emplacements ${prefix}${startNum} à ${prefix}${startNum+count-1}...`;
+    statusEl.textContent=`📍 ÉTAPE 1/2 : Cliquez sur le DEBUT du trottoir pour les emplacements ${prefix}${startNum} à ${prefix}${startNum+count-1}...`;
   };
 }
 
@@ -158,19 +163,23 @@ view.addEventListener('click',e=>{
 
     if(!window.rowStallP1){
       window.rowStallP1={x:x_pct,y:y_pct,px:mapX,py:mapY};
-      statusEl.textContent=`📍 ÉTAPE 2/2 : Cliquez sur la FIN de la rue pour placer les ${window.rowStallConfig.count} emplacements alignés...`;
+      statusEl.textContent=`📍 ÉTAPE 2/2 : Cliquez sur la FIN du trottoir pour placer les ${window.rowStallConfig.count} emplacements alignés...`;
       return;
     }else{
       const p1=window.rowStallP1,p2={x:x_pct,y:y_pct,px:mapX,py:mapY};
-      const {prefix,startNum,count}=window.rowStallConfig;
+      const {prefix,startNum,count,sideOffset}=window.rowStallConfig;
       const dx=p2.px-p1.px,dy=p2.py-p1.py;
+      const dist=Math.hypot(dx,dy)||1;
       const angleRad=Math.atan2(dy,dx);
       const angleDeg=Number((angleRad*180/Math.PI).toFixed(1));
+      const nx=-dy/dist,ny=dx/dist;
 
       for(let k=0;k<count;k++){
         const t=count===1?0:k/(count-1);
-        const dispX=Number((p1.x+(p2.x-p1.x)*t).toFixed(4));
-        const dispY=Number((p1.y+(p2.y-p1.y)*t).toFixed(4));
+        const px=p1.px+dx*t+nx*sideOffset;
+        const py=p1.py+dy*t+ny*sideOffset;
+        const dispX=Number(((px/map.naturalWidth)*100).toFixed(4));
+        const dispY=Number(((py/map.naturalHeight)*100).toFixed(4));
         const stallId=prefix+(startNum+k);
 
         let finalPos=[dispX,dispY];
