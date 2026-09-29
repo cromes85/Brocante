@@ -201,6 +201,11 @@ function handleMapClick(clientX,clientY,target){
       const angleDeg=Number((angleRad*180/Math.PI).toFixed(1));
       const nx=-dy/dist,ny=dx/dist;
 
+      const stepDist=dist/Math.max(1,count>1?count-1:1);
+      const stallW=Number(Math.max(8,Math.min(22,stepDist*0.85)).toFixed(1));
+      const stallH=Number(Math.max(6,Math.min(12,stallW*0.65)).toFixed(1));
+      const fontSize=Number(Math.max(6,Math.min(9,stallW*0.55)).toFixed(1));
+
       for(let k=0;k<count;k++){
         const t=count===1?0:k/(count-1);
         const px=p1.px+dx*t+nx*sideOffset;
@@ -223,7 +228,10 @@ function handleMapClick(clientX,clientY,target){
           rue:defaultRue,
           dimension:'',
           statut:'',
-          angle:angleDeg
+          angle:angleDeg,
+          width:stallW,
+          height:stallH,
+          fontSize:fontSize
         };
 
         if(existingIdx>=0){
