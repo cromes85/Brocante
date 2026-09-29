@@ -80,16 +80,22 @@ function controls(){
   setupQuickStatusButtons();
 }
 
-let isRowStallMode=false,rowStallP1=null,rowStallConfig=null;
+window.isRowStallMode=false;
+window.rowStallP1=null;
+window.rowStallConfig=null;
+window.isPlacingStallMode=false;
+window.isDrawingNewOutline=false;
+
 const clickAddBtn=$('#clickAddStall');
 if(clickAddBtn){
   clickAddBtn.onclick=()=>{
     if(!window.isUnlocked||window.isSaving)return;
-    isPlacingStallMode=!isPlacingStallMode;
-    clickAddBtn.textContent=isPlacingStallMode?'❌ Annuler la pose sur la carte':'📍 Poser un emplacement sur la carte (1 Clic)';
-    clickAddBtn.classList.toggle('danger',isPlacingStallMode);
-    view.style.cursor=isPlacingStallMode?'crosshair':'default';
-    if(isPlacingStallMode)statusEl.textContent='Cliquez à l’endroit exact sur la carte pour poser le nouvel emplacement.';
+    window.isPlacingStallMode=!window.isPlacingStallMode;
+    window.isRowStallMode=false;
+    clickAddBtn.textContent=window.isPlacingStallMode?'❌ Annuler la pose sur la carte':'📍 Poser un emplacement sur la carte (1 Clic)';
+    clickAddBtn.classList.toggle('danger',window.isPlacingStallMode);
+    view.style.cursor=window.isPlacingStallMode?'crosshair':'default';
+    if(window.isPlacingStallMode)statusEl.textContent='Cliquez à l’endroit exact sur la carte pour poser le nouvel emplacement.';
   };
 }
 
@@ -97,8 +103,8 @@ const clickAddRowBtn=$('#clickAddRowStalls');
 if(clickAddRowBtn){
   clickAddRowBtn.onclick=()=>{
     if(!window.isUnlocked||window.isSaving)return;
-    if(isRowStallMode){
-      isRowStallMode=false;rowStallP1=null;
+    if(window.isRowStallMode){
+      window.isRowStallMode=false;window.rowStallP1=null;
       clickAddRowBtn.textContent='⚡ Générer une rangée d\'emplacements (Ligne)';
       clickAddRowBtn.classList.remove('danger');
       view.style.cursor='default';
@@ -113,9 +119,10 @@ if(clickAddRowBtn){
     if(!countStr)return;
     const startNum=parseInt(startNumStr,10)||1;
     const count=parseInt(countStr,10)||10;
-    rowStallConfig={prefix:prefix.trim(),startNum,count};
-    rowStallP1=null;
-    isRowStallMode=true;
+    window.rowStallConfig={prefix:prefix.trim(),startNum,count};
+    window.rowStallP1=null;
+    window.isRowStallMode=true;
+    window.isPlacingStallMode=false;
     clickAddRowBtn.textContent='❌ Annuler la rangée';
     clickAddRowBtn.classList.add('danger');
     view.style.cursor='crosshair';
@@ -130,7 +137,7 @@ view.addEventListener('click',e=>{
   const mapX=(e.clientX-rect.left-tx)/sc;
   const mapY=(e.clientY-rect.top-ty)/sc;
 
-  if(isDrawingNewOutline&&window.sectorEditMode){
+  if(window.isDrawingNewOutline&&window.sectorEditMode){
     const secId=sectorEl.value||'gare';
     const px=Number(mapX.toFixed(1)),py=Number(mapY.toFixed(1));
     if(!CLEAR_OUTLINES[secId])CLEAR_OUTLINES[secId]=[];
@@ -142,47 +149,58 @@ view.addEventListener('click',e=>{
     return;
   }
 
-  if(isRowStallMode&&rowStallConfig){
+  if(window.isRowStallMode&&window.rowStallConfig){
     const x_pct=Math.max(0,Math.min(100,(mapX/map.naturalWidth)*100));
     const y_pct=Math.max(0,Math.min(100,(mapY/map.naturalHeight)*100));
     const targetSectorId=sectorEl.value||'gare';
     const sec=SECTORS.find(s=>s.id===targetSectorId);
     const defaultRue=sec?sec.name:'Place de la Gare';
 
-    if(!rowStallP1){
-      rowStallP1={x:x_pct,y:y_pct,px:mapX,py:mapY};
-      statusEl.textContent=`📍 ÉTAPE 2/2 : Cliquez sur la FIN de la rue pour placer les ${rowStallConfig.count} emplacements alignés...`;
+    if(!window.rowStallP1){
+      window.rowStallP1={x:x_pct,y:y_pct,px:mapX,py:mapY};
+      statusEl.textContent=`📍 ÉTAPE 2/2 : Cliquez sur la FIN de la rue pour placer les ${window.rowStallConfig.count} emplacements alignés...`;
       return;
     }else{
-      const p1=rowStallP1,p2={x:x_pct,y:y_pct,px:mapX,py:mapY};
-      const {prefix,startNum,count}=rowStallConfig;
+      const p1=window.rowStallP1,p2={x:x_pct,y:y_pct,px:mapX,py:mapY};
+      const {prefix,startNum,count}=window.rowStallConfig;
       const dx=p2.px-p1.px,dy=p2.py-p1.py;
       const angleRad=Math.atan2(dy,dx);
       const angleDeg=Number((angleRad*180/Math.PI).toFixed(1));
 
       for(let k=0;k<count;k++){
         const t=count===1?0:k/(count-1);
-        const curX=Number((p1.x+(p2.x-p1.x)*t).toFixed(2));
-        const curY=Number((p1.y+(p2.y-p1.y)*t).toFixed(2));
+        const dispX=Number((p1.x+(p2.x-p1.x)*t).toFixed(4));
+        const dispY=Number((p1.y+(p2.y-p1.y)*t).toFixed(4));
         const stallId=prefix+(startNum+k);
 
-        if(!rows.some(r=>r.emplacement.toUpperCase()===stallId.toUpperCase())){
-          rows.push({
-            emplacement:stallId,
-            x_pct:curX,
-            y_pct:curY,
-            nom:'',
-            rue:defaultRue,
-            dimension:'',
-            statut:'',
-            angle:angleDeg
-          });
+        let finalPos=[dispX,dispY];
+        if(typeof window.fromDisplayed==='function'){
+          finalPos=window.fromDisplayed(defaultRue,dispX,dispY);
+        }
+
+        const existingIdx=rows.findIndex(r=>r.emplacement.toUpperCase()===stallId.toUpperCase());
+        const newStall={
+          emplacement:stallId,
+          x_pct:Number(finalPos[0].toFixed(4)),
+          y_pct:Number(finalPos[1].toFixed(4)),
+          nom:'',
+          rue:defaultRue,
+          dimension:'',
+          statut:'',
+          angle:angleDeg
+        };
+
+        if(existingIdx>=0){
+          rows[existingIdx]=newStall;
+        }else{
+          rows.push(newStall);
         }
       }
       render();
       markDirty();
-      isRowStallMode=false;
-      rowStallP1=null;
+      window.isRowStallMode=false;
+      window.rowStallP1=null;
+      window.rowStallConfig=null;
       if(clickAddRowBtn){
         clickAddRowBtn.textContent='⚡ Générer une rangée d\'emplacements (Ligne)';
         clickAddRowBtn.classList.remove('danger');
@@ -193,7 +211,7 @@ view.addEventListener('click',e=>{
     }
   }
 
-  if(isPlacingStallMode){
+  if(window.isPlacingStallMode){
     const x_pct=Math.max(0,Math.min(100,(mapX/map.naturalWidth)*100));
     const y_pct=Math.max(0,Math.min(100,(mapY/map.naturalHeight)*100));
     const targetSectorId=sectorEl.value||'gare';
@@ -202,18 +220,22 @@ view.addEventListener('click',e=>{
     let defaultId='G'+(rows.filter(r=>!['__SITE_MODE__','__SECTOR_OUTLINES__'].includes(r.emplacement)).length+1);
     const empId=prompt('Numéro du nouvel emplacement à poser ici (ex: G66, B12) :',defaultId);
     if(!empId||!empId.trim()){
-      isPlacingStallMode=false;
+      window.isPlacingStallMode=false;
       if(clickAddBtn){clickAddBtn.textContent='📍 Poser un emplacement sur la carte (1 Clic)';clickAddBtn.classList.remove('danger');}
       view.style.cursor='default';
       return;
     }
     const cleanId=empId.trim();
-    rows.push({emplacement:cleanId,x_pct:Number(x_pct.toFixed(2)),y_pct:Number(y_pct.toFixed(2)),nom:'',rue:defaultRue,dimension:'',statut:''});
+    let finalPos=[x_pct,y_pct];
+    if(typeof window.fromDisplayed==='function'){
+      finalPos=window.fromDisplayed(defaultRue,x_pct,y_pct);
+    }
+    rows.push({emplacement:cleanId,x_pct:Number(finalPos[0].toFixed(4)),y_pct:Number(finalPos[1].toFixed(4)),nom:'',rue:defaultRue,dimension:'',statut:''});
     selected=rows.length-1;
     render();
     fillForm(rows[selected]);
     markDirty();
-    isPlacingStallMode=false;
+    window.isPlacingStallMode=false;
     if(clickAddBtn){clickAddBtn.textContent='📍 Poser un emplacement sur la carte (1 Clic)';clickAddBtn.classList.remove('danger');}
     view.style.cursor='default';
     statusEl.textContent=`Emplacement ${cleanId} posé sur la carte ! N’oubliez pas de sauvegarder.`;

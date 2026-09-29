@@ -166,8 +166,15 @@ function drawZones(){
     g.setAttribute('role','button');
     g.setAttribute('tabindex','0');
     g.setAttribute('aria-label',s.name);
-    g.onclick=e=>{e.stopPropagation();chooseSector(s.id)};
-    g.onpointerdown=e=>e.stopPropagation();
+    g.onclick=e=>{
+      if(window.isPlacingStallMode||window.isRowStallMode||(window.sectorEditMode&&window.isDrawingNewOutline))return;
+      e.stopPropagation();
+      chooseSector(s.id);
+    };
+    g.onpointerdown=e=>{
+      if(window.isPlacingStallMode||window.isRowStallMode||(window.sectorEditMode&&window.isDrawingNewOutline))return;
+      e.stopPropagation();
+    };
     g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseSector(s.id)}};
 
     if(window.ADMIN_MODE && window.sectorEditMode && isTargetSector){
