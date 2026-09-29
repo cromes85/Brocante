@@ -70,7 +70,7 @@ function setupQuickStatusButtons(){
 }
 
 function controls(){
-  for(const id of ['#saveFile','#add','#clickAddStall','#importFile'])if($(id))$(id).disabled=!window.isUnlocked||window.isSaving;
+  for(const id of ['#saveFile','#add','#clickAddStall','#clickAddRowStalls','#importFile'])if($(id))$(id).disabled=!window.isUnlocked||window.isSaving;
   $('#logout').classList.toggle('hidden',!window.isUnlocked);
   $('#login').classList.toggle('hidden',window.isUnlocked);
   $('#reload').disabled=window.isSaving;
