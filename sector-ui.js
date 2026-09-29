@@ -239,41 +239,95 @@ function drawZones(){
 
     svg.append(g);
   }
+  drawSvgStalls();
 }
+
+function drawSvgStalls(){
+  const svg=$('#zones');
+  if(!svg)return;
+  let gStalls=svg.querySelector('#svgStalls');
+  if(!gStalls){
+    gStalls=document.createElementNS('http://www.w3.org/2000/svg','g');
+    gStalls.id='svgStalls';
+    svg.append(gStalls);
+  }
+  gStalls.innerHTML='';
+
+  if(!window.ADMIN_MODE&&typeof isConstructionMode==='function'&&isConstructionMode())return;
+  if(!rows||!rows.length)return;
+
+  rows.forEach((r,i)=>{
+    if(['__SITE_MODE__','__SECTOR_OUTLINES__'].includes(r.emplacement))return;
+    const sec=sectorFor(r.rue);
+    const p=pointOnMap(r);
+    if(sectorEl.value&&sec?.id!==sectorEl.value)return;
+    if(p[0]<0||p[1]<0||p[0]>map.naturalWidth||p[1]>map.naturalHeight)return;
+
+    const st=window.getStallStatus?window.getStallStatus(r):'libre';
+    const isSel=(i===selected);
+    const color=st==='libre'?'#22c55e':(st==='reserve'?'#ef4444':'#64748b');
+    const strokeColor=isSel?'#38bdf8':'#ffffff';
+    const strokeWidth=isSel?'2.5':'1.2';
+    const fillOpacity=isSel?'1':'0.9';
+
+    const stallG=document.createElementNS('http://www.w3.org/2000/svg','g');
+    stallG.setAttribute('class',`svg-stall-tile status-${st}`+(isSel?' selected':''));
+    stallG.setAttribute('role','button');
+    stallG.setAttribute('tabindex','0');
+    stallG.style.cursor='pointer';
+
+    const w=r.width||18;
+    const h=r.height||11;
+    const rot=r.angle||0;
+
+    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',(-w/2).toFixed(1));
+    rect.setAttribute('y',(-h/2).toFixed(1));
+    rect.setAttribute('width',w.toFixed(1));
+    rect.setAttribute('height',h.toFixed(1));
+    rect.setAttribute('rx','2');
+    rect.setAttribute('ry','2');
+    rect.setAttribute('fill',color);
+    rect.setAttribute('fill-opacity',fillOpacity);
+    rect.setAttribute('stroke',strokeColor);
+    rect.setAttribute('stroke-width',strokeWidth);
+    rect.setAttribute('transform',`translate(${p[0].toFixed(1)},${p[1].toFixed(1)}) rotate(${rot})`);
+
+    const text=document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('x',p[0].toFixed(1));
+    text.setAttribute('y',(p[1]+0.5).toFixed(1));
+    text.setAttribute('fill','#ffffff');
+    text.setAttribute('font-size',(r.fontSize||7.5).toFixed(1)+'px');
+    text.setAttribute('font-weight','800');
+    text.setAttribute('text-anchor','middle');
+    text.setAttribute('dominant-baseline','central');
+    text.setAttribute('transform',`rotate(${rot},${p[0].toFixed(1)},${p[1].toFixed(1)})`);
+    text.style.pointerEvents='none';
+    text.style.userSelect='none';
+    text.textContent=r.emplacement;
+
+    const title=document.createElementNS('http://www.w3.org/2000/svg','title');
+    title.textContent=r.emplacement+' — '+(sec?.name||r.rue)+(r.nom?` (${r.nom})`:'');
+    stallG.append(rect,text,title);
+
+    stallG.onclick=e=>{e.stopPropagation();selectRow(i)};
+    stallG.onpointerdown=e=>{
+      if(window.ADMIN_MODE&&window.isUnlocked){
+        markerDown(e,i);
+      }else{
+        e.stopPropagation();
+      }
+    };
+
+    gStalls.append(stallG);
+  });
+}
+window.drawSvgStalls=drawSvgStalls;
 
 render=function(){
   markers.innerHTML='';
+  markers.classList.add('hidden');
   if(window.updateCounters)window.updateCounters();
-  if(!window.ADMIN_MODE&&typeof isConstructionMode==='function'&&isConstructionMode()){
-    markers.classList.add('hidden');
-    drawZones();
-    return;
-  }
-  markers.classList.remove('hidden');
-  rows.forEach((r,i)=>{
-    if(['__SITE_MODE__','__SECTOR_OUTLINES__'].includes(r.emplacement))return;
-    const sec=sectorFor(r.rue),p=pointOnMap(r),m=document.createElement('button');
-    const st=window.getStallStatus?window.getStallStatus(r):'libre';
-    m.type='button';
-    m.className=`marker status-${st}`+(window.ADMIN_MODE?' admin-marker':'')+(i===selected?' selected':'');
-    if(r.angle)m.style.setProperty('--rot',r.angle+'deg');
-    if(r.width)m.style.setProperty('--w',r.width+'px');
-    if(r.height)m.style.setProperty('--h',r.height+'px');
-    if(r.fontSize)m.style.setProperty('--fs',r.fontSize+'px');
-    m.dataset.index=i;
-    m.hidden=!!sectorEl.value&&sec?.id!==sectorEl.value||p[0]<0||p[1]<0||p[0]>map.naturalWidth||p[1]>map.naturalHeight;
-    m.style.left=p[0]+'px';
-    m.style.top=p[1]+'px';
-    m.textContent=r.emplacement;
-    m.setAttribute('aria-label',`${r.emplacement} — ${sec?.name||r.rue}`);
-    const tip=document.createElement('span');
-    tip.className='tip';
-    tip.textContent=r.emplacement+' — '+(sec?.name||r.rue)+(r.nom?` (${r.nom})`:'');
-    m.append(tip);
-    m.onpointerdown=e=>markerDown(e,i);
-    m.onclick=e=>{e.stopPropagation();selectRow(i)};
-    markers.append(m);
-  });
   drawZones();
 };
 

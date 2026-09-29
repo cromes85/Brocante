@@ -169,49 +169,20 @@ button:active,.button:active{transform:scale(0.98)}
   stroke-opacity: 1 !important;
 }
 
-/* MARQUEURS / EMPLACEMENTS SUR LA CARTE (Pavés à l'échelle de la rue) */
-.marker{
-  position:absolute;
-  transform:translate(-50%,-50%) rotate(var(--rot,0deg));
-  width:var(--w,16px);
-  height:var(--h,10px);
-  min-width:0!important;
-  padding:0 1px;
-  border-radius:2px;
-  background:#22c55e;
-  border:1px solid #ffffff;
-  box-shadow:0 1px 3px rgba(0,0,0,0.35);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#ffffff;
-  font-size:var(--fs,8px);
-  font-weight:800;
-  letter-spacing:-0.3px;
-  cursor:pointer;
-  user-select:none;
-  touch-action:none;
-  white-space:nowrap;
-  overflow:hidden;
-  transition:transform .15s ease,background-color .15s ease,box-shadow .15s ease;
+/* STYLES DES PAVÉS SVG EMPLACEMENTS (Méthode Dimanche Matin) */
+.svg-stall-tile rect {
+  transition: fill 0.15s ease, stroke 0.15s ease, filter 0.15s ease;
 }
-.marker[hidden]{display:none!important}
-.marker.status-libre{background:#22c55e!important;border-color:#ffffff!important;color:#fff!important;box-shadow:0 1px 4px rgba(34,197,94,0.45)}
-.marker.status-reserve{background:#ef4444!important;border-color:#ffffff!important;color:#fff!important;box-shadow:0 1px 4px rgba(239,68,68,0.45)}
-.marker.status-bloque{background:#64748b!important;border-color:#e2e8f0!important;color:#fff!important;box-shadow:0 1px 4px rgba(100,116,139,0.45)}
-.marker:hover{transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1.65);z-index:15;box-shadow:0 4px 12px rgba(0,0,0,0.6);overflow:visible}
-.marker.selected{
-  color:#fff;
-  z-index:20;
-  border-width:1.5px;
-  transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1.85);
-  box-shadow:0 0 0 3px rgba(56,189,248,0.9),0 4px 14px rgba(0,0,0,0.6);
-  animation:pulseMarker 1.5s infinite alternate ease-in-out;
-  overflow:visible;
+.svg-stall-tile:hover rect {
+  fill-opacity: 1 !important;
+  stroke: #ffffff !important;
+  stroke-width: 2px !important;
+  filter: drop-shadow(0 0 6px rgba(56,189,248,0.85));
 }
-@keyframes pulseMarker{
-  0%{transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1.8)}
-  100%{transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(2.0)}
+.svg-stall-tile.selected rect {
+  stroke: #38bdf8 !important;
+  stroke-width: 2.5px !important;
+  filter: drop-shadow(0 0 8px rgba(56,189,248,0.95));
 }
 
 /* COMPTEURS DE STATUTS & BADGES (Méthode Dimanche Matin) */
