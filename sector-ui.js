@@ -249,6 +249,7 @@ render=function(){
     const st=window.getStallStatus?window.getStallStatus(r):'libre';
     m.type='button';
     m.className=`marker status-${st}`+(window.ADMIN_MODE?' admin-marker':'')+(i===selected?' selected':'');
+    if(r.angle)m.style.setProperty('--rot',r.angle+'deg');
     m.dataset.index=i;
     m.hidden=!!sectorEl.value&&sec?.id!==sectorEl.value||p[0]<0||p[1]<0||p[0]>map.naturalWidth||p[1]>map.naturalHeight;
     m.style.left=p[0]+'px';
