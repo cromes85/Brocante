@@ -220,10 +220,12 @@ function handleMapClick(clientX,clientY,target){
         }
 
         const existingIdx=rows.findIndex(r=>r.emplacement.toUpperCase()===stallId.toUpperCase());
+        const clampedX=Math.max(0,Math.min(100,Number(finalPos[0])));
+        const clampedY=Math.max(0,Math.min(100,Number(finalPos[1])));
         const newStall={
           emplacement:stallId,
-          x_pct:Number(finalPos[0].toFixed(4)),
-          y_pct:Number(finalPos[1].toFixed(4)),
+          x_pct:Number(clampedX.toFixed(4)),
+          y_pct:Number(clampedY.toFixed(4)),
           nom:'',
           rue:defaultRue,
           dimension:'',
@@ -274,7 +276,9 @@ function handleMapClick(clientX,clientY,target){
     if(typeof window.fromDisplayed==='function'){
       finalPos=window.fromDisplayed(defaultRue,x_pct,y_pct);
     }
-    rows.push({emplacement:cleanId,x_pct:Number(finalPos[0].toFixed(4)),y_pct:Number(finalPos[1].toFixed(4)),nom:'',rue:defaultRue,dimension:'',statut:''});
+    const clampedX=Math.max(0,Math.min(100,Number(finalPos[0])));
+    const clampedY=Math.max(0,Math.min(100,Number(finalPos[1])));
+    rows.push({emplacement:cleanId,x_pct:Number(clampedX.toFixed(4)),y_pct:Number(clampedY.toFixed(4)),nom:'',rue:defaultRue,dimension:'',statut:''});
     selected=rows.length-1;
     render();
     fillForm(rows[selected]);
@@ -291,7 +295,16 @@ $('#editor').oninput=()=>{if(window.isUnlocked)markDirty()};
 $('#login').onsubmit=async e=>{e.preventDefault();const button=$('#login button');button.disabled=true;try{const auth=await CloudApi.login($('#password').value);window.adminToken=auth.token;const data=await CloudApi.read(auth.token);rows=data.rows.map(cleanRow);cloudVersion=data.version;selected=null;window.isUnlocked=true;$('#password').value='';resetEditor();render();controls();$('#empty').textContent='Cliquez sur un marqueur, puis déplacez-le ou modifiez ses champs.';statusEl.textContent='Connecté — données Google chargées.'}catch(err){statusEl.textContent=err.message}finally{button.disabled=false}};
 $('#add').onclick=()=>{if(!window.isUnlocked||window.isSaving||!applyForm())return;const sec=SECTORS.find(s=>s.id===sectorEl.value);if(!sec){statusEl.textContent='Choisissez d’abord le secteur du nouvel emplacement.';return}let n=1,id;do{id='N'+n++}while(rows.some(r=>r.emplacement===id));const p=storedPoint(sec.name,sec.center);rows.push({emplacement:id,x_pct:p[0],y_pct:p[1],nom:'',rue:sec.name,dimension:'',statut:''});selected=rows.length-1;render();fillForm(rows[selected]);markDirty()};
 $('#remove').onclick=()=>{if(!window.isUnlocked||window.isSaving||selected===null||!confirm(`Supprimer ${rows[selected].emplacement} ?`))return;rows.splice(selected,1);selected=null;render();resetEditor();markDirty()};
-$('#saveFile').onclick=async()=>{if(!window.isUnlocked||!cloudVersion||!applyForm())return;window.isSaving=true;controls();statusEl.textContent='Sauvegarde sur Google…';try{const data=await CloudApi.save(window.adminToken,rows,cloudVersion);rows=data.rows.map(cleanRow);cloudVersion=data.version;selected=null;resetEditor();render();statusEl.textContent='Sauvegardé sur Google. Le public s’actualise sous 30 secondes.'}catch(err){statusEl.textContent='Sauvegarde non confirmée : '+err.message}finally{window.isSaving=false;controls()}};
+$('#saveFile').onclick=async()=>{
+  if(!window.isUnlocked||!cloudVersion||!applyForm())return;
+  rows.forEach(r=>{
+    if(!['__SITE_MODE__','__SECTOR_OUTLINES__'].includes(r.emplacement)){
+      if(Number.isFinite(r.x_pct))r.x_pct=Math.max(0,Math.min(100,Number(r.x_pct.toFixed(4))));
+      if(Number.isFinite(r.y_pct))r.y_pct=Math.max(0,Math.min(100,Number(r.y_pct.toFixed(4))));
+    }
+  });
+  window.isSaving=true;controls();statusEl.textContent='Sauvegarde sur Google…';try{const data=await CloudApi.save(window.adminToken,rows,cloudVersion);rows=data.rows.map(cleanRow);cloudVersion=data.version;selected=null;resetEditor();render();statusEl.textContent='Sauvegardé sur Google. Le public s’actualise sous 30 secondes.'}catch(err){statusEl.textContent='Sauvegarde non confirmée : '+err.message}finally{window.isSaving=false;controls()}
+};
 $('#logout').onclick=async()=>{if(dirty&&!confirm('Quitter sans sauvegarder ?'))return;try{await CloudApi.logout(window.adminToken)}catch(e){}window.adminToken=null;window.isUnlocked=false;selected=null;resetEditor();controls();await loadData()};
 $('#exportFile').onclick=()=>{if(window.isUnlocked&&!applyForm())return;const exportRows=rows.filter(r=>r.emplacement!=='__SITE_MODE__');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(exportRows,null,2)+'\n'],{type:'application/json'}));a.download='emplacements.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 $('#importFile').onchange=async e=>{if(!window.isUnlocked)return;try{const data=JSON.parse(await e.target.files[0].text());if(!Array.isArray(data)||data.length>5000)throw Error('Format invalide.');const next=data.map(cleanRow);if(next.some(r=>!validRow(r))||new Set(next.map(r=>r.emplacement.toUpperCase())).size!==next.length)throw Error('Numéros ou positions invalides/dupliqués.');if(!confirm(`Remplacer la liste locale par ${next.length} emplacements ? Google ne sera modifié qu’après sauvegarde.`))return;rows=next;selected=null;render();resetEditor();markDirty()}catch(err){statusEl.textContent='Import refusé : '+err.message}finally{e.target.value=''}};
